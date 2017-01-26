@@ -51,7 +51,7 @@ and s_proc =
 and  s_proc_call =
     { s_proc_call_class:  string;        (* class of the function called *)
       s_proc_call_name:   string;        (* its name *) }
-      
+
 (* Arithmetic and boolean expressions *)
 and s_expr =
   | Se_const of s_constant

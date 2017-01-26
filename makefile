@@ -31,6 +31,8 @@ ML_FILES=	localizing.ml \
 		$(AUTOGEN_ML) \
 		simple_java_syntax.ml \
 		simple_java_translate.ml \
+		simple_java_display.ml \
+		simple_java_interpreter.ml \
 		analyzer.ml
 CMO_FILES=	$(ML_FILES:%.ml=%.cmo)
 CMX_FILES=      $(ML_FILES:%.ml=%.cmx)
@@ -39,7 +41,7 @@ analyzer: $(CMX_FILES) $(AUTOGEN)
 
 depend: $(AUTOGEN_ML) $(ML_FILES)
 	ocamldep $(OCAMLINCLUDES) *.mli *.ml */*.mli */*.ml > depend
-clean: 
+clean:
 	rm -f *.cmo *.cmi *.cmx */*.cmi */*.cmo */*.cmx && \
 	rm -f *.o $(AUTOGEN_ML) $(AUTOGEN_MLI) analyzer depend *~ \
 	rm -r *.output
