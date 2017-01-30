@@ -3,6 +3,6 @@ class A {
   static boolean b;
 
   static void f() {
-    return;
+
   }
 }

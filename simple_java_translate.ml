@@ -24,7 +24,7 @@ let add_global_env
     with Not_found -> StringMap.empty in
   assert (not (StringMap.mem vn class_xs));
   StringMap.add cn (StringMap.add vn x class_xs) table
-  
+
 (* Find a name in a global environment *)
 let find_global_env
     (table: 'a global_env) ((cn, vn): string * string): 'a =
@@ -129,7 +129,7 @@ let tr_binary_op = function
 (* (which should be resolved later) *)
 let tr_variable_name (env: env) (n: name) =
   match n with
-  | Simple_name (vn, _) -> 
+  | Simple_name (vn, _) ->
       find_non_pointed env vn
   | Qualified_name (Simple_name (cn, _), vn) ->
       find_pointed env (cn, vn)
@@ -234,10 +234,17 @@ let rec tr_statement_e (env: env) ((s, ext): statement_e): s_block * env =
 	| _ -> non_supported "complex assignment"
       end
   | Expression _ -> non_supported "non-assignment expression"
-  | Block_statement b -> non_supported "block"
+  | Block_statement b ->
+      let l, _ =
+        List.fold_left
+          (fun (accl, env) s ->
+            let l, env = tr_statement_e env s in
+            l @ accl, env
+          ) ([ ], env) b in
+      l, env
   | Return None -> non_supported "return"
   | Return (Some e) -> non_supported "return"
-  | Assert (e, None) -> 
+  | Assert (e, None) ->
       [ Sc_assert (tr_expr_e env e), ext ], env
   | Assert (_, _) -> non_supported "assert(e,e)"
   | Type_decl _ -> non_supported "type declaration"

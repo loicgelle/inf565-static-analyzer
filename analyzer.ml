@@ -1,5 +1,6 @@
 open Simple_java_syntax
 open Simple_java_display
+open Simple_java_interpreter
 
 let main () =
   (* Parsing arguments *)
@@ -19,7 +20,10 @@ let main () =
 	    (Printexc.to_string e);
           failwith "Stopped" in
     let prg = Simple_java_translate.tr_java_prog java_prog in
-    Simple_java_display.print_program prg in
+    try
+      Simple_java_interpreter.interp_prg prg "A" "f"
+    with
+    | Interp_error(s, _) -> print_endline "Interpretation error!"; print_endline s in
   Printf.printf "finished...\n"
 
 let _ = main ()
