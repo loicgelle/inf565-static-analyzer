@@ -32,7 +32,7 @@ let main () =
       | None -> ()
       | Some loc -> print_endline (extent_to_string loc);
       print_endline "Interpretation error!"; print_endline s)
-    | Not_init_var_error -> print_endline "Error: use of not initialized variable"
+    | Not_init_var_error(loc) -> (print_endline (extent_to_string loc); print_endline "Error: use of not initialized variable")
     | Typing_error(loc) -> (print_endline (extent_to_string loc); print_endline "Typing error") in
   Printf.printf "finished...\n"
 

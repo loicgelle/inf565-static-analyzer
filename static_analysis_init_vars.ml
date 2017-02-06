@@ -1,7 +1,8 @@
 (* This file implements some simple static analysis *)
 open Simple_java_syntax
+open Localizing
 
-exception Not_init_var_error
+exception Not_init_var_error of extent
 
 (* Part 2: detects use of uninitialized variables *)
 (* ASSUMING that the program consists of one function ONLY *)
@@ -46,9 +47,9 @@ let set_initialized gamma id =
   | Not_found ->
     Hashtbl.add gamma id Initialized
 
-let check_critical_var gamma id =
+let check_critical_var loc gamma id =
   if not (is_initialized gamma id) then
-    raise Not_init_var_error
+    raise(Not_init_var_error loc)
 
 let rec list_used_vars = function
 | Se_const _ -> []
@@ -59,8 +60,9 @@ let rec list_used_vars = function
   (list_used_vars (fst e1))@(list_used_vars (fst e2))
 
 let check_expr gamma e =
+  let loc = snd e in
   let l = list_used_vars (fst e) in
-  List.iter (check_critical_var gamma) l
+  List.iter (check_critical_var loc gamma) l
 
 let check_var_decl gamma vd =
   let var = fst vd in
