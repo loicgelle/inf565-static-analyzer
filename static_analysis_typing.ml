@@ -31,6 +31,12 @@ let rec get_expr_type expr =
         check_types_consistency loc St_bool (get_expr_type e2);
         St_bool
       end
+    | Sb_lt ->
+      begin
+        check_types_consistency loc St_int (get_expr_type e1);
+        check_types_consistency loc St_int (get_expr_type e2);
+        St_bool
+      end
     | _ ->
       begin
         check_types_consistency loc St_int (get_expr_type e1);
@@ -71,4 +77,4 @@ let check_class cl =
   List.iter check_decl cl.s_class_body
 
 let check_typing prg =
-    List.iter check_class prg
+  List.iter check_class prg

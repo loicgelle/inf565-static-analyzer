@@ -70,9 +70,7 @@ let rec interp_expr v_gamma expr =
       | Sb_sub -> Vint (Int64.sub i1 i2)
       | Sb_mul -> Vint (Int64.mul i1 i2)
       | Sb_div -> Vint (Int64.div i1 i2)
-      | Sb_lt -> (match Int64.compare i1 i2 with
-        | -1 -> Vbool true
-        | _ -> Vbool false)
+      | Sb_lt -> (if Int64.compare i1 i2 < 0 then Vbool true else Vbool false)
       | _ -> error "case treated" loc)
     | _ -> error ("Cannot apply operator to non integer values") loc)
 

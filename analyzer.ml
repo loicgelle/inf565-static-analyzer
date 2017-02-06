@@ -25,7 +25,8 @@ let main () =
     let prg = Simple_java_translate.tr_java_prog java_prog in
     try
       Static_analysis_init_vars.check_non_initialized_vars prg;
-      Static_analysis_typing.check_typing prg
+      Static_analysis_typing.check_typing prg;
+      Static_analysis_constants.constant_analysis prg
     with
     | Interp_error(s, loc_opt) ->
       (match loc_opt with
