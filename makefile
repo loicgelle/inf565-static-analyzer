@@ -34,6 +34,7 @@ ML_FILES=	localizing.ml \
 		simple_java_display.ml \
 		simple_java_interpreter.ml \
 		static_analysis_init_vars.ml \
+		static_analysis_typing.ml \
 		analyzer.ml
 CMO_FILES=	$(ML_FILES:%.ml=%.cmo)
 CMX_FILES=      $(ML_FILES:%.ml=%.cmx)

@@ -3,6 +3,7 @@ open Simple_java_display
 open Simple_java_interpreter
 open Static_analysis_init_vars
 open Static_analysis_typing
+open Localizing
 
 let main () =
   (* Parsing arguments *)
@@ -23,10 +24,16 @@ let main () =
           failwith "Stopped" in
     let prg = Simple_java_translate.tr_java_prog java_prog in
     try
-      Static_analysis_init_vars.check_non_initialized_vars prg
+      Static_analysis_init_vars.check_non_initialized_vars prg;
+      Static_analysis_typing.check_typing prg
     with
-    | Interp_error(s, _) -> (print_endline "Interpretation error!"; print_endline s)
-    | Not_init_var_error -> print_endline "Error: use of not initialized variable" in
+    | Interp_error(s, loc_opt) ->
+      (match loc_opt with
+      | None -> ()
+      | Some loc -> print_endline (extent_to_string loc);
+      print_endline "Interpretation error!"; print_endline s)
+    | Not_init_var_error -> print_endline "Error: use of not initialized variable"
+    | Typing_error(loc) -> (print_endline (extent_to_string loc); print_endline "Typing error") in
   Printf.printf "finished...\n"
 
 let _ = main ()
