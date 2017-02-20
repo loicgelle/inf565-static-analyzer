@@ -38,6 +38,21 @@ let get_var_state gamma id =
 let set_var_state gamma id st =
   VarState.add id st gamma
 
+let merge_states g1 g2 =
+  let merge_func key a b = match a, b with
+  | Some v1, Some v2 ->
+    begin
+      match v1, v2 with
+      | Determined (Sc_int i1), Determined (Sc_int i2) when i1 = i2 ->
+        Some (Determined (Sc_int i1))
+      | Determined (Sc_bool b1), Determined (Sc_bool b2) when b1 = b2 ->
+        Some (Determined (Sc_bool b1))
+      | _, _ -> Some Undetermined
+    end
+  | Some _, None -> None
+  | None, Some _ -> None in
+  VarState.merge merge_func g1 g2
+
 let rec compute_expr_state gamma expr = match fst expr with
 | Se_const c -> Determined c
 | Se_random(_, _) -> Undetermined
@@ -73,20 +88,22 @@ let rec analyze_command gamma cmd = print_debug gamma cmd; match fst cmd with
   let new_st = compute_expr_state gamma expr in
   set_var_state gamma v.s_var_uniqueId new_st
 | Sc_assert _ -> gamma
-| Sc_while(expr, blk) -> gamma
-  (*begin
+| Sc_while(expr, blk) ->
+  begin
     match (compute_expr_state gamma expr) with
     | Determined(Sc_bool true) ->
-      (List.iter (analyze_command gamma) blk;
-      analyze_command gamma cmd)
-    | _ -> ()
-  end TODO *)
+      analyze_command (List.fold_left analyze_command gamma blk) cmd
+    | _ -> gamma
+  end
 | Sc_if(expr, blk1, blk2) ->
   begin
     match (compute_expr_state gamma expr) with
     | Determined(Sc_bool true) -> List.fold_left analyze_command gamma blk1
     | Determined(Sc_bool false) -> List.fold_left analyze_command gamma blk2
-    | _ -> gamma (* TODO *)
+    | Undetermined ->
+      let state_t = List.fold_left analyze_command gamma blk1 in
+      let state_f = List.fold_left analyze_command gamma blk2 in
+      merge_states state_t state_f
   end
 | Sc_proc_call _ -> gamma
 
