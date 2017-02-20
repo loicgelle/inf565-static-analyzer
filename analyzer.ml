@@ -3,6 +3,7 @@ open Simple_java_display
 open Simple_java_interpreter
 open Static_analysis_init_vars
 open Static_analysis_typing
+open Static_analysis_variables
 open Localizing
 
 let main () =
@@ -26,7 +27,7 @@ let main () =
     try
       Static_analysis_init_vars.check_non_initialized_vars prg;
       Static_analysis_typing.check_typing prg;
-      Static_analysis_constants.constant_analysis prg
+      Static_analysis_variables.constant_analysis prg
     with
     | Interp_error(s, loc_opt) ->
       (match loc_opt with

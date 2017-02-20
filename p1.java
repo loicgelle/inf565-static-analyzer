@@ -4,10 +4,10 @@ class A {
 
   static void f() {
     x = 3;
-    while (x < 10) {
-      x = x + 2;
-      if (x < 7) {
-        y = 7;
+    if (x < 4) {
+      x = 4;
+      if (x < 4) {
+        x = 2;
       }
     }
   }
