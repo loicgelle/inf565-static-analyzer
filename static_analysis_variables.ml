@@ -7,6 +7,9 @@ open Simple_java_syntax
 open Simple_java_display
 open Simple_java_display
 
+(* Print debug information *)
+let debug = true
+
 type var_state =
 | Determined of s_constant
 | Undetermined
@@ -22,12 +25,12 @@ let print_state gamma =
     print_endline ((string_of_int a) ^ " -> " ^ (str_of_state b)) in
   VarState.iter aux gamma
 
-let print_debug gamma cmd =
-  print_endline "BEFORE CMD...";
+let print_debug gamma cmd = if not debug then () else
+  (print_endline "BEFORE CMD...";
   print_command ">>" cmd;
   print_endline "...STATE IS:";
   print_state gamma;
-  print_endline "----------"
+  print_endline "----------")
 
 let get_var_state gamma id =
   try
@@ -125,7 +128,7 @@ let analyze_decl gamma = function
 let analyze_class cl =
   let gamma = VarState.empty in
   let final_gamma = List.fold_left analyze_decl gamma cl.s_class_body in
-  print_endline "FINAL STATE IS:"; print_state final_gamma
+  if not debug then () else (print_endline "FINAL STATE IS:"; print_state final_gamma)
 
 let constant_analysis prg =
   (* I use List.iter although I expect programs with one class only... *)
