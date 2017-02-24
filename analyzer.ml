@@ -27,7 +27,7 @@ let main () =
     try
       Static_analysis_init_vars.check_non_initialized_vars prg;
       Static_analysis_typing.check_typing prg;
-      Static_analysis_variables.constant_analysis prg
+      Static_analysis_variables.variables_analysis prg
     with
     | Interp_error(s, loc_opt) ->
       (match loc_opt with

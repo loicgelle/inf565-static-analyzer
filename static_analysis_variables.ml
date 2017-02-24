@@ -52,6 +52,6 @@ let analyze_class cl =
   let final_gamma = List.fold_left analyze_decl gamma cl.s_class_body in
   Domain.print_final_debug debug final_gamma
 
-let constant_analysis prg =
+let variables_analysis prg =
   (* I use List.iter although I expect programs with one class only... *)
   List.iter analyze_class prg
