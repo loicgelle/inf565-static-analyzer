@@ -3,6 +3,7 @@ open Simple_java_display
 
 module AbstractDomain (DT : Domains.DomainType) = struct
   type var_state = DT.info_type
+  open DT
 
   type condition_status =
   | Verified
@@ -60,6 +61,63 @@ module AbstractDomain (DT : Domains.DomainType) = struct
     let info2 = compute_expr_state gamma e2 in
     DT.binop_to_info op info1 info2
 
+  let rec simplify_expr gamma expr =
+    let loc = snd expr in
+    match fst expr with
+    | Se_var v ->
+      begin
+        let st = get_var_state gamma v.s_var_uniqueId in
+        try
+          let c = DT.info_to_expr st in
+          (c, (snd expr))
+        with
+        | Cannot_simplify -> expr
+      end
+    | Se_unary(Su_neg, e) ->
+      begin
+        let simpl_e = simplify_expr gamma e in
+        match fst simpl_e with
+        | Se_const(Sc_bool b) -> (Se_const(Sc_bool (not b)), loc)
+        | _ -> (Se_unary(Su_neg, simpl_e), loc)
+      end
+    | Se_binary(op, e1, e2) ->
+      begin
+        let simpl_e1 = simplify_expr gamma e1 in
+        let simpl_e2 = simplify_expr gamma e2 in
+        match op with
+        | Sb_or ->
+          begin
+            match fst simpl_e1, fst simpl_e2 with
+            | Se_const(Sc_bool b1), Se_const(Sc_bool b2) ->
+              (Se_const(Sc_bool (b1 || b2)), loc)
+            | _, _ -> (Se_binary(op, simpl_e1, simpl_e2), loc)
+          end
+        | Sb_lt ->
+          begin
+            match fst simpl_e1, fst simpl_e2 with
+            | Se_const(Sc_int i1), Se_const(Sc_int i2) when Int64.compare i1 i2 < 0 ->
+              (Se_const(Sc_bool true), loc)
+            | Se_const(Sc_int _), Se_const(Sc_int _) ->
+              (Se_const(Sc_bool false), loc)
+            | _, _ -> (Se_binary(op, simpl_e1, simpl_e2), loc)
+          end
+        | _ ->
+          begin
+            match fst simpl_e1, fst simpl_e2 with
+            | Se_const(Sc_int i1), Se_const(Sc_int i2) ->
+              begin
+                let res = match op with
+                | Sb_add -> Int64.add i1 i2
+                | Sb_mul -> Int64.mul i1 i2
+                | Sb_div -> Int64.div i1 i2
+                | Sb_sub -> Int64.sub i1 i2 in
+                (Se_const(Sc_int res), loc)
+              end
+            | _, _ -> (Se_binary(op, simpl_e1, simpl_e2), loc)
+          end
+      end
+    | _ -> expr
+
   let check_condition gamma expr =
     let st = compute_expr_state gamma expr in
     if DT.is_true st then Verified
@@ -79,6 +137,8 @@ module AbstractDomain (DT : Domains.DomainType) = struct
     let change_fun g i =
       VarState.add i val_undetermined g in
     List.fold_left change_fun gamma lst
+
+  let is_unchanged = DT.is_unchanged
 
   let compute_loop_final_state cmd_fun init_gamma expr =
     let rec aux cnt changed_vars last_gamma gamma =

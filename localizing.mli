@@ -21,3 +21,4 @@ val extent_unknown: unit -> extent
 (* Display of extents. *)
 val locus_to_string: locus -> string
 val extent_to_string: extent -> string
+val extent_unique_id: extent -> int

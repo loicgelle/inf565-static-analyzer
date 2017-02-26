@@ -25,9 +25,11 @@ let main () =
           failwith "Stopped" in
     let prg = Simple_java_translate.tr_java_prog java_prog in
     try
+      Simple_java_display.print_program prg;
       Static_analysis_init_vars.check_non_initialized_vars prg;
       Static_analysis_typing.check_typing prg;
-      Static_analysis_variables.variables_analysis prg
+      let simpl_prg = Static_analysis_variables.variables_analysis prg in
+      Simple_java_display.print_program simpl_prg
     with
     | Interp_error(s, loc_opt) ->
       (match loc_opt with

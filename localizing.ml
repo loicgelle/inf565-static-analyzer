@@ -45,7 +45,7 @@ let extent lexbuf =
   make_extent
     (find_locus_in_current_line (Lexing.lexeme_start lexbuf))
     (find_locus_in_current_line (Lexing.lexeme_end lexbuf))
-    
+
 (* Parser support *)
 let extopt a b =
   match a with

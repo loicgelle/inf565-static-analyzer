@@ -3,6 +3,8 @@ open Simple_java_syntax
 module type DomainType = sig
   type info_type
 
+  exception Cannot_simplify
+
   val val_undetermined: info_type
   val merge_infos: info_type -> info_type -> info_type
   val const_to_info: s_constant -> info_type
@@ -12,9 +14,13 @@ module type DomainType = sig
   val is_true: info_type -> bool
   val is_false: info_type -> bool
   val str_of_state: info_type -> string
+  val is_unchanged: info_type -> info_type -> bool
+  val info_to_expr: info_type -> s_expr
 end
 
 module ConstantsType : DomainType = struct
+  exception Cannot_simplify
+
   type info_type =
   | Determined of s_constant
   | Undetermined
@@ -72,9 +78,19 @@ module ConstantsType : DomainType = struct
   | Determined(Sc_bool false) -> true
   | _ -> false
 
+  let is_unchanged info1 info2 = match info1, info2 with
+  | Determined(Sc_bool b1), Determined(Sc_bool b2) when b1 = b2 -> true
+  | Determined(Sc_int i1), Determined(Sc_int i2) when Int64.equal i1 i2 -> true
+  | _, _ -> false
+
+  let info_to_expr = function
+  | Undetermined -> raise Cannot_simplify
+  | Determined(c) -> Se_const(c)
+
 end
 
 module IntervalsType : DomainType = struct
+  exception Cannot_simplify
   type int_info =
   | MInfty (* - infinity *)
   | PInfty (* + infinity *)
@@ -268,7 +284,28 @@ module IntervalsType : DomainType = struct
   | _ -> false
 
   let is_false = function
-  | Boolean(falsem) -> true
+  | Boolean(false) -> true
   | _ -> false
+
+  let is_unchanged info1 info2 = match info1, info2 with
+  | Boolean b1, Boolean b2 when b1 = b2 -> true
+  | Interval(int11, int12), Interval(int21, int22) ->
+    begin
+      match int11, int12, int21, int22 with
+      | Int i11, Int i12, Int i21, Int i22
+        when Int64.equal i11 i12 && Int64.equal i21 i12 && Int64.equal i21 i22 -> true
+      | _, _, _, _ -> false
+    end
+  | _, _ -> false
+
+  let info_to_expr = function
+  | Boolean b -> Se_const(Sc_bool b)
+  | Interval(int1, int2) ->
+    begin
+      match int1, int2 with
+      | Int i1, Int i2 when Int64.equal i1 i2 -> Se_const(Sc_int i1)
+      | _, _ -> raise Cannot_simplify
+    end
+  | _ -> raise Cannot_simplify
 
 end
