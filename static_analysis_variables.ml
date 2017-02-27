@@ -18,7 +18,7 @@ let simpl_tbl = Hashtbl.create 100
 let debug = true
 
 (* Instantiate abstract domain *)
-module Domain = AbstractDomain(Domains.IntervalsType)
+module Domain = AbstractDomain(Domain_congruences.CongruencesType)
 open Domain
 
 let simpl_id e = Localizing.extent_unique_id e
