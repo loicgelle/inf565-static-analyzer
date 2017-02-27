@@ -1,7 +1,8 @@
 open Simple_java_syntax
 open Simple_java_display
 
-module AbstractDomain (DT : Domains.DomainType) = struct
+module AbstractDomain (Dom : Domains.DomainType) = struct
+  module DT = Abstract_domain_with_boolean.DomainWithBoolean(Dom)
   type var_state = DT.info_type
   open DT
 
@@ -15,7 +16,8 @@ module AbstractDomain (DT : Domains.DomainType) = struct
   let max_loop_rounds = 10
 
   let return_empty_state () = VarState.empty
-  let val_undetermined = DT.val_undetermined
+  let val_undetermined_bool = DT.val_undetermined_bool
+  let val_undetermined_int = DT.val_undetermined_int
 
   let print_state gamma =
     let aux a b =
@@ -34,11 +36,12 @@ module AbstractDomain (DT : Domains.DomainType) = struct
     print_state gamma;
     print_endline "----------")
 
-  let get_var_state gamma id =
+  let get_var_state is_boolean gamma id =
     try
       VarState.find id gamma
     with
-    | Not_found -> val_undetermined
+    | Not_found when is_boolean -> DT.val_undetermined_bool
+    | Not_found -> DT.val_undetermined_int
 
   let set_var_state gamma id st =
     VarState.add id st gamma
@@ -54,7 +57,7 @@ module AbstractDomain (DT : Domains.DomainType) = struct
   let rec compute_expr_state gamma expr = match fst expr with
   | Se_const c -> DT.const_to_info c
   | Se_random(i1, i2) -> DT.random_to_info i1 i2
-  | Se_var v -> get_var_state gamma v.s_var_uniqueId
+  | Se_var v -> get_var_state (v.s_var_type = St_bool) gamma v.s_var_uniqueId
   | Se_unary(Su_neg, e) -> DT.unop_to_info (compute_expr_state gamma e)
   | Se_binary(op, e1, e2) ->
     let info1 = compute_expr_state gamma e1 in
@@ -66,7 +69,7 @@ module AbstractDomain (DT : Domains.DomainType) = struct
     match fst expr with
     | Se_var v ->
       begin
-        let st = get_var_state gamma v.s_var_uniqueId in
+        let st = get_var_state (v.s_var_type = St_bool) gamma v.s_var_uniqueId in
         try
           let c = DT.info_to_expr st in
           (c, (snd expr))
@@ -110,7 +113,8 @@ module AbstractDomain (DT : Domains.DomainType) = struct
                 | Sb_add -> Int64.add i1 i2
                 | Sb_mul -> Int64.mul i1 i2
                 | Sb_div -> Int64.div i1 i2
-                | Sb_sub -> Int64.sub i1 i2 in
+                | Sb_sub -> Int64.sub i1 i2
+                | _ -> failwith "typing should be correct at that point" in
                 (Se_const(Sc_int res), loc)
               end
             | _, _ -> (Se_binary(op, simpl_e1, simpl_e2), loc)
@@ -135,7 +139,9 @@ module AbstractDomain (DT : Domains.DomainType) = struct
 
   let set_changed_vars_to_unknown lst gamma =
     let change_fun g i =
-      VarState.add i val_undetermined g in
+      let oldst = VarState.find i g in
+      let newst = DT.get_undetermined_st oldst in
+      VarState.add i newst g in
     List.fold_left change_fun gamma lst
 
   let is_unchanged = DT.is_unchanged
@@ -147,7 +153,7 @@ module AbstractDomain (DT : Domains.DomainType) = struct
           let new_gamma = set_changed_vars_to_unknown changed_vars gamma in
           merge_states new_gamma (cmd_fun new_gamma)
         else
-          match (check_condition init_gamma expr) with
+          match (check_condition gamma expr) with
           | Not_verified -> gamma
           | Verified when cnt <= 1 ->
             aux (cnt + 1) changed_vars
@@ -162,7 +168,5 @@ module AbstractDomain (DT : Domains.DomainType) = struct
             merge_states gamma (cmd_fun new_gamma2)
       end in
     aux 0 [] init_gamma init_gamma
-
-
 
 end

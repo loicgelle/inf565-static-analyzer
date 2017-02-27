@@ -3,7 +3,10 @@ class A {
   static boolean b1, b2;
 
   static void f() {
-    x = 1;
-    x = x + 2;
+    x = 4;
+    while (x < 6) {
+      y = 2;
+      x = x + 1;
+    }
   }
 }

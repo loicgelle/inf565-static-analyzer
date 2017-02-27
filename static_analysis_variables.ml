@@ -37,7 +37,7 @@ let rec analyze_command gamma cmd = Domain.print_debug debug gamma cmd;
   | Sc_assign(v, expr) ->
     begin
       let new_st = Domain.compute_expr_state gamma expr in
-      let old_st = Domain.get_var_state gamma v.s_var_uniqueId in
+      let old_st = Domain.get_var_state (v.s_var_type = St_bool) gamma v.s_var_uniqueId in
       let new_gamma = Domain.set_var_state gamma v.s_var_uniqueId new_st in
       if Domain.is_unchanged new_st old_st then
         Hashtbl.add simpl_tbl loc_id Remove_Instr
@@ -122,8 +122,9 @@ let simplify_proc pr =
 
 let analyze_var_decl gamma vd =
   let var = fst vd in
+  let undet_st = (if var.s_var_type = St_bool then val_undetermined_bool else val_undetermined_int) in
   match snd vd with
-  | None -> Domain.set_var_state gamma var.s_var_uniqueId Domain.val_undetermined
+  | None -> Domain.set_var_state gamma var.s_var_uniqueId undet_st
   | Some e -> Domain.set_var_state gamma var.s_var_uniqueId (Domain.compute_expr_state gamma e)
 
 let simplify_var_decl vd =

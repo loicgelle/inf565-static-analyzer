@@ -36,10 +36,11 @@ ML_FILES=	localizing.ml \
 		static_analysis_init_vars.ml \
 		static_analysis_typing.ml \
 		domains.ml \
+		abstract_domain_with_boolean.ml \
 		abstract_domain.ml \
+		domain_congruences.ml \
 		domain_constants.ml \
 		domain_intervals.ml \
-		domain_congruences.ml \
 		static_analysis_variables.ml \
 		analyzer.ml
 CMO_FILES=	$(ML_FILES:%.ml=%.cmo)
