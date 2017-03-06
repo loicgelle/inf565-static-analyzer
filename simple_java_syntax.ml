@@ -28,7 +28,7 @@ type s_unary_op =
 type s_binary_op =
   | Sb_add | Sb_sub | Sb_mul | Sb_div
   | Sb_or
-  | Sb_lt
+  | Sb_lt | Sb_eq
 
 (* A variable *)
 type s_var =

@@ -13,8 +13,10 @@ module type DomainType = sig
   val is_unchanged: info_type -> info_type -> bool
   val info_to_expr: info_type -> s_expr
   val is_lt: info_type -> info_type -> bool
+  val is_eq: info_type -> info_type -> bool
   val binop_add_to_info: info_type -> info_type -> info_type
   val binop_sub_to_info: info_type -> info_type -> info_type
   val binop_mul_to_info: info_type -> info_type -> info_type
   val binop_div_to_info: info_type -> info_type -> info_type
+  val extend_info: info_type list -> info_type
 end

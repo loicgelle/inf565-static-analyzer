@@ -31,7 +31,7 @@ let rec get_expr_type expr =
         check_types_consistency loc St_bool (get_expr_type e2);
         St_bool
       end
-    | Sb_lt ->
+    | Sb_lt | Sb_eq ->
       begin
         check_types_consistency loc St_int (get_expr_type e1);
         check_types_consistency loc St_int (get_expr_type e2);

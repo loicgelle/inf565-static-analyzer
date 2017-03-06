@@ -104,6 +104,15 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
               (Se_const(Sc_bool false), loc)
             | _, _ -> (Se_binary(op, simpl_e1, simpl_e2), loc)
           end
+        | Sb_eq ->
+          begin
+            match fst simpl_e1, fst simpl_e2 with
+            | Se_const(Sc_int i1), Se_const(Sc_int i2) when Int64.compare i1 i2 = 0 ->
+              (Se_const(Sc_bool true), loc)
+            | Se_const(Sc_int _), Se_const(Sc_int _) ->
+              (Se_const(Sc_bool false), loc)
+            | _, _ -> (Se_binary(op, simpl_e1, simpl_e2), loc)
+          end
         | _ ->
           begin
             match fst simpl_e1, fst simpl_e2 with
@@ -146,27 +155,33 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
 
   let is_unchanged = DT.is_unchanged
 
+  let states_union gammalst =
+    let merge_func key a b = match a, b with
+    | Some v1, Some v2 -> Some(v2::v1)
+    | Some _, None -> None
+    | None, Some _ -> None
+    | None, None -> None in
+    let empty_gamma = VarState.map (fun _ -> []) (List.hd gammalst) in
+    let gamma_lst_states = List.fold_left (VarState.merge merge_func) empty_gamma gammalst in
+    VarState.map DT.extend_info gamma_lst_states
+
   let compute_loop_final_state cmd_fun init_gamma expr =
-    let rec aux cnt changed_vars last_gamma gamma =
+    let rec aux cnt saved_gammas gamma =
       begin
         if cnt = max_loop_rounds then
-          let new_gamma = set_changed_vars_to_unknown changed_vars gamma in
-          merge_states new_gamma (cmd_fun new_gamma)
+          let new_gamma = states_union ((cmd_fun gamma)::saved_gammas) in
+          merge_states new_gamma init_gamma
         else
           match (check_condition gamma expr) with
           | Not_verified -> gamma
-          | Verified when cnt <= 1 ->
-            aux (cnt + 1) changed_vars
-              gamma (cmd_fun gamma)
           | Verified ->
-            aux (cnt + 1) ((compute_changed_vars last_gamma gamma)@changed_vars)
-              gamma (cmd_fun gamma)
+            let new_st = cmd_fun gamma in
+            aux (cnt + 1) (new_st::saved_gammas) new_st
           | Unknown ->
             let new_gamma1 = cmd_fun gamma in
-            let new_changed_vars = ((compute_changed_vars new_gamma1 gamma)@changed_vars) in
-            let new_gamma2 = set_changed_vars_to_unknown new_changed_vars new_gamma1 in
-            merge_states gamma (cmd_fun new_gamma2)
+            let new_gamma2 = states_union (new_gamma1::saved_gammas) in
+            merge_states init_gamma (cmd_fun new_gamma2)
       end in
-    aux 0 [] init_gamma init_gamma
+    aux 0 [] init_gamma
 
 end

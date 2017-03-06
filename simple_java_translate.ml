@@ -114,7 +114,7 @@ let tr_binary_op = function
   | And | Xor -> non_supported "boolean operator"
   | Bitwise_and | Bitwise_or | Lshift | Rshift | Urshift ->
       non_supported "bitwise operator"
-  | Equal -> non_supported "equal"
+  | Equal -> Sb_eq
   | Lesser_than -> Sb_lt
   | Greater_than | Lesser_equal | Greater_equal ->
       non_supported "test"

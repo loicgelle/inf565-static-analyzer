@@ -127,6 +127,13 @@ module IntervalsType : Domains.DomainType = struct
     else if int_infos_lt false i22 i11 then false
     else raise Cannot_simplify_in_domain
 
+  let is_eq info1 info2 = match info1, info2 with
+  | (Int(i11), Int(i12)), (Int(i21), Int(i22)) ->
+    if Int64.equal i11 i12 && Int64.equal i12 i21 && Int64.equal i21 i22 then
+      true
+    else raise Cannot_simplify_in_domain
+  | _, _ -> raise Cannot_simplify_in_domain
+
   let binop_add_to_info info1 info2 =
     let (i11, i12) = info1 in
     let (i21, i22) = info2 in
@@ -189,5 +196,28 @@ module IntervalsType : Domains.DomainType = struct
       | Int i1, Int i2 when Int64.equal i1 i2 -> Se_const(Sc_int i1)
       | _, _ -> raise Cannot_simplify_in_domain
     end
+
+  let min_bound info1 info2 = match info1, info2 with
+  | MInfty, _ -> MInfty
+  | PInfty, _ -> info2
+  | Int i1, Int i2 -> if Int64.compare i1 i2 < 0 then info1 else MInfty
+  | Int _, PInfty -> info1
+  | _, _ -> MInfty
+
+  let max_bound info1 info2 = match info1, info2 with
+  | PInfty, _ -> PInfty
+  | MInfty, _ -> info2
+  | Int i1, Int i2 -> if Int64.compare i1 i2 > 0 then info1 else PInfty
+  | Int _, MInfty -> info1
+  | _, _ -> PInfty
+
+  let extend_info lst =
+    let rec extend_info_aux info1 info2 =
+      if is_unchanged info1 info2 then info1
+      else match info1, info2 with
+      | (i11, i12), (i21, i22) -> (min_bound i11 i21, max_bound i12 i22) in
+    match lst with
+    | [] -> val_undetermined
+    | h::t -> List.fold_left extend_info_aux h t
 
 end

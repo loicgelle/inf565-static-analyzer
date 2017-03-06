@@ -27,6 +27,11 @@ module ConstantsType : Domains.DomainType = struct
     Int64.compare i1 i2 < 0
   | _, _ -> raise Cannot_simplify_in_domain
 
+  let is_eq info1 info2 = match info1, info2 with
+  | Determined i1, Determined i2 ->
+    Int64.compare i1 i2 = 0
+  | _, _ -> raise Cannot_simplify_in_domain
+
   let binop_add_to_info info1 info2 = match info1, info2 with
   | Determined i1, Determined i2 -> Determined(Int64.add i1 i2)
   | _, _ -> raise Cannot_simplify_in_domain
@@ -50,5 +55,13 @@ module ConstantsType : Domains.DomainType = struct
   let info_to_expr = function
   | Undetermined -> raise Cannot_simplify_in_domain
   | Determined i -> Se_const(Sc_int i)
+
+  let extend_info lst =
+    let rec extend_info_aux info1 info2 =
+      if is_unchanged info1 info2 then info1
+      else val_undetermined in
+    match lst with
+    | [] -> val_undetermined
+    | h::t -> List.fold_left extend_info_aux h t
 
 end

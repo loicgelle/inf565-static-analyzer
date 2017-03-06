@@ -127,9 +127,6 @@ let analyze_var_decl gamma vd =
   | None -> Domain.set_var_state gamma var.s_var_uniqueId undet_st
   | Some e -> Domain.set_var_state gamma var.s_var_uniqueId (Domain.compute_expr_state gamma e)
 
-let simplify_var_decl vd =
-  vd (* TODO *)
-
 let analyze_decl gamma = function
 | Sd_var vd ->
   analyze_var_decl gamma vd
@@ -138,7 +135,7 @@ let analyze_decl gamma = function
 
 let simplify_decl = function
 | Sd_var vd ->
-  Sd_var(simplify_var_decl vd)
+  Sd_var vd
 | Sd_function p ->
   Sd_function(simplify_proc p)
 

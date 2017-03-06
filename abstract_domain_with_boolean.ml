@@ -87,6 +87,17 @@ module DomainWithBoolean(Dom: Domains.DomainType) = struct
       with
       | Cannot_simplify_in_domain -> Boolean(Undetermined)
     end
+    | Sb_eq ->
+    begin
+      try
+        match info1, info2 with
+        | Integer(i_info1), Integer(i_info2) ->
+          let b = Dom.is_eq i_info1 i_info2 in
+          Boolean(Determined(b))
+        | _, _ -> Boolean(Undetermined)
+      with
+      | Cannot_simplify_in_domain -> Boolean(Undetermined)
+    end
   | _ ->
     begin
       match info1, info2 with
@@ -105,8 +116,31 @@ module DomainWithBoolean(Dom: Domains.DomainType) = struct
       | _, _ -> Integer(Dom.val_undetermined) (* should not happen since typing has been checked *)
     end
 
-    let get_undetermined_st = function
-    | Boolean(_) -> Boolean(Undetermined)
-    | Integer(_) -> Integer(Dom.val_undetermined)
+  let get_undetermined_st = function
+  | Boolean(_) -> Boolean(Undetermined)
+  | Integer(_) -> Integer(Dom.val_undetermined)
+
+  let strip_bool_tag = function
+  | Boolean(i) -> i
+  | _ -> failwith "not a boolean info"
+
+  let strip_int_tag = function
+  | Integer(i) -> i
+  | _ -> failwith "not an integer info"
+
+  let extend_boolean_info =
+    let rec aux last_info = function
+    | [] -> Determined(last_info)
+    | (Determined(h))::t when h = last_info -> aux last_info t
+    | _ -> Undetermined in
+    function
+    | [] -> failwith "cannot extend without information"
+    | (Determined(b))::t -> aux b t
+    | _ -> Undetermined
+
+  let extend_info info_lst = match info_lst with
+  | [] -> failwith "cannot extend without information"
+  | Boolean(_)::_ -> Boolean(extend_boolean_info (List.map strip_bool_tag info_lst))
+  | Integer(_)::_ -> Integer(Dom.extend_info (List.map strip_int_tag info_lst))
 
 end

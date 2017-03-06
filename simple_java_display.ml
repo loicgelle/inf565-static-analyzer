@@ -26,6 +26,7 @@ let str_of_binary = function
 | Sb_mul -> "*"
 | Sb_div -> "/"
 | Sb_or -> "OR"
+| Sb_eq -> "=="
 | Sb_lt -> "<"
 
 let rec str_of_expr_e expr = match fst expr with

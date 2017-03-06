@@ -3,10 +3,14 @@ class A {
   static boolean b1, b2;
 
   static void f() {
-    x = 4;
-    while (x < 6) {
-      y = 2;
-      x = x + 1;
+    x = 1;
+    while (x < 100) {
+      x = x + 4;
+    }
+    if (x == 3) {
+      b1 = true;
+    } else {
+      b1 = false;
     }
   }
 }
