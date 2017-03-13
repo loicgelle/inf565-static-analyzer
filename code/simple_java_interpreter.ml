@@ -71,7 +71,7 @@ let rec interp_expr v_gamma expr =
       | Sb_mul -> Vint (Int64.mul i1 i2)
       | Sb_div -> Vint (Int64.div i1 i2)
       | Sb_lt -> (if Int64.compare i1 i2 < 0 then Vbool true else Vbool false)
-      | _ -> error "case treated" loc)
+      | Sb_eq -> (if Int64.equal i1 i2 then Vbool true else Vbool false))
     | _ -> error ("Cannot apply operator to non integer values") loc)
 
 let rec interp_cmd cl_name gamma cmd =
@@ -151,7 +151,8 @@ let init_env s_prg =
   List.iter (init_class_env gamma) s_prg; gamma
 
 (* Interpret given proc in given class *)
-let interp_prg prg cl_name proc_name =
+let interp_prg prg cl_name =
+  let proc_name = "main" in
   let gamma = init_env prg in
   try
     begin
