@@ -92,7 +92,7 @@ module DomainWithBoolean(Dom: Domains.DomainType) = struct
       try
         match info1, info2 with
         | Integer(i_info1), Integer(i_info2) ->
-          let b = Dom.is_eq i_info1 i_info2 in
+          let b = Dom.is_eq NoSpec i_info1 i_info2 in
           Boolean(Determined(b))
         | _, _ -> Boolean(Undetermined)
       with
@@ -138,9 +138,29 @@ module DomainWithBoolean(Dom: Domains.DomainType) = struct
     | (Determined(b))::t -> aux b t
     | _ -> Undetermined
 
-  let extend_info info_lst = match info_lst with
+  let extend_info b_extend info_lst = match info_lst with
   | [] -> failwith "cannot extend without information"
   | Boolean(_)::_ -> Boolean(extend_boolean_info (List.map strip_bool_tag info_lst))
-  | Integer(_)::_ -> Integer(Dom.extend_info (List.map strip_int_tag info_lst))
+  | Integer(_)::_ -> Integer(Dom.extend_info b_extend (List.map strip_int_tag info_lst))
+
+  let reduce_states_eq info1 info2 = match info1, info2 with
+  | Boolean(ib1), Boolean(ib2) -> Boolean(ib2)
+  | Integer(ii1), Integer(ii2) -> Integer(Dom.reduce_states_eq ii1 ii2)
+  | _, _ -> failwith "types should be correct at that point"
+
+  let reduce_states_neq info1 info2 = match info1, info2 with
+  | Boolean(ib1), Boolean(_) when is_true info2 -> Boolean(Determined(false))
+  | Boolean(ib1), Boolean(_) when is_false info2 -> Boolean(Determined(true))
+  | Boolean(_), Boolean(_) -> Boolean(Undetermined)
+  | Integer(ii1), Integer(ii2) -> Integer(Dom.reduce_states_neq ii1 ii2)
+  | _, _ -> failwith "types should be correct at that point"
+
+  let reduce_states_lt info1 info2 = match info1, info2 with
+  | Integer(ii1), Integer(ii2) -> Integer(Dom.reduce_states_lt ii1 ii2)
+  | _, _ -> failwith "types should be correct at that point"
+
+  let reduce_states_gte info1 info2 = match info1, info2 with
+  | Integer(ii1), Integer(ii2) -> Integer(Dom.reduce_states_gte ii1 ii2)
+  | _, _ -> failwith "types should be correct at that point"
 
 end

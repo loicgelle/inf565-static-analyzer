@@ -7,7 +7,13 @@ class A {
     while (x < 100) {
       x = x + 4;
     }
-    if (x == 3) {
+    y = 1;
+    if (x < 4) {
+      x = x + 1;
+    } else {
+      x = 2;
+    }
+    if (x == 2) {
       b1 = true;
     } else {
       b1 = false;

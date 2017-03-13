@@ -163,7 +163,55 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
     | None, None -> None in
     let empty_gamma = VarState.map (fun _ -> []) (List.hd gammalst) in
     let gamma_lst_states = List.fold_left (VarState.merge merge_func) empty_gamma gammalst in
-    VarState.map DT.extend_info gamma_lst_states
+    VarState.map (DT.extend_info true) gamma_lst_states
+
+  let merge_states_if g1 g2 =
+    let merge_func key a b = match a, b with
+    | Some v1, Some v2 -> Some(v2::v1)
+    | Some _, None -> None
+    | None, Some _ -> None
+    | None, None -> None in
+    let empty_gamma = VarState.map (fun _ -> []) g1 in
+    let gamma_lst_states = List.fold_left (VarState.merge merge_func) empty_gamma [g1; g2] in
+    VarState.map (DT.extend_info false) gamma_lst_states
+
+  let rec build_cond_states gamma expr = match fst expr with
+  | Se_binary(Sb_eq, e1, e2) ->
+    begin
+      let (g1_t, g1_f) = match fst e1 with
+      | Se_var v ->
+        let curr_st = get_var_state (v.s_var_type = St_bool) gamma v.s_var_uniqueId in
+        let new_st_t = DT.reduce_states_eq curr_st (compute_expr_state gamma e2) in
+        let new_st_f = DT.reduce_states_neq curr_st (compute_expr_state gamma e2) in
+        (set_var_state gamma v.s_var_uniqueId new_st_t, set_var_state gamma v.s_var_uniqueId new_st_f)
+      | _ -> (gamma, gamma) in
+      match fst e2 with
+      | Se_var v ->
+        let curr_st = get_var_state (v.s_var_type = St_bool) gamma v.s_var_uniqueId in
+        let new_st_t = DT.reduce_states_eq curr_st (compute_expr_state gamma e1) in
+        let new_st_f = DT.reduce_states_neq curr_st (compute_expr_state gamma e1) in
+        (set_var_state g1_t v.s_var_uniqueId new_st_t, set_var_state g1_f v.s_var_uniqueId new_st_f)
+      | _ -> (g1_t, g1_f)
+    end
+  | Se_binary(Sb_lt, e1, e2) ->
+    begin
+      let (g1_t, g1_f) = match fst e1 with
+      | Se_var v ->
+        let curr_st = get_var_state (v.s_var_type = St_bool) gamma v.s_var_uniqueId in
+        let new_st_t = DT.reduce_states_lt curr_st (compute_expr_state gamma e2) in
+        let new_st_f = DT.reduce_states_gte curr_st (compute_expr_state gamma e2) in
+        (set_var_state gamma v.s_var_uniqueId new_st_t, set_var_state gamma v.s_var_uniqueId new_st_f)
+      | _ -> (gamma, gamma) in
+      match fst e2 with
+      | Se_var v ->
+        let curr_st = get_var_state (v.s_var_type = St_bool) gamma v.s_var_uniqueId in
+        let new_st_t = DT.reduce_states_gte curr_st (compute_expr_state gamma e1) in
+        let new_st_f = DT.reduce_states_lt curr_st (compute_expr_state gamma e1) in
+        (set_var_state g1_t v.s_var_uniqueId new_st_t, set_var_state g1_f v.s_var_uniqueId new_st_f)
+      | _ -> (g1_t, g1_f)
+    end
+  | _ -> gamma, gamma
+
 
   let compute_loop_final_state cmd_fun init_gamma expr =
     let rec aux cnt saved_gammas gamma =

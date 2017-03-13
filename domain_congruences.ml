@@ -4,9 +4,11 @@ module CongruencesType : Domains.DomainType = struct
   exception Cannot_simplify_in_domain
 
   type info_type =
-  | Congruence of int64 * int64
+  | Congruence of int64 * int64 (* (a, b) means that n = a [b] *)
   | Cst of int64
-    (* (a, b) means that n = a [b] *)
+  type spec_type =
+  | RangeLength of int64
+  | NoSpec
 
   let val_undetermined = Congruence(Int64.zero, Int64.one)
 
@@ -44,9 +46,17 @@ module CongruencesType : Domains.DomainType = struct
     (Int64.compare i1 i2) < 0
   | _, _ -> raise Cannot_simplify_in_domain
 
-  let is_eq info1 info2 = match info1, info2 with
+  let is_eq spec info1 info2 = match info1, info2 with
   | Cst(i1), Cst(i2) ->
     (Int64.compare i1 i2) = 0
+  | Cst(i1), Congruence(a, b) ->
+    if Int64.equal (rem i1 a) (rem b a) then raise Cannot_simplify_in_domain else false
+  | Congruence(a, b), Cst(i2) ->
+    if Int64.equal (rem i2 a) (rem b a) then begin
+      match spec with
+      | RangeLength l when Int64.compare l a < 0 -> true
+      | _  -> raise Cannot_simplify_in_domain
+    end else false
   | _, _ -> raise Cannot_simplify_in_domain
 
   let binop_add_to_info info1 info2 = match info1, info2 with
@@ -140,7 +150,7 @@ module CongruencesType : Domains.DomainType = struct
     else
       val_undetermined
 
-  let extend_info lst =
+  let extend_info _ lst =
     match get_exact_info lst with
     | Some(i) -> i
     | None ->
@@ -150,5 +160,17 @@ module CongruencesType : Domains.DomainType = struct
         | h::t ->
           List.fold_left merge_congruence_infos h t
       end
+
+  let reduce_states_eq info1 info2 = match info1, info2 with
+  | _, Cst(_) -> info2
+  | _, _ -> info1
+
+  let reduce_states_neq info1 _ = info1
+  let reduce_states_lt info1 _ = info1
+  let reduce_states_gte info1 _ = info1
+
+  let count_possible = function
+  | Cst _ -> Int64.one
+  | _ -> raise Cannot_simplify_in_domain
 
 end

@@ -41,6 +41,7 @@ ML_FILES=	localizing.ml \
 		domain_congruences.ml \
 		domain_constants.ml \
 		domain_intervals.ml \
+		domain_congruences_and_intervals.ml \
 		static_analysis_variables.ml \
 		analyzer.ml
 CMO_FILES=	$(ML_FILES:%.ml=%.cmo)

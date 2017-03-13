@@ -18,7 +18,7 @@ let simpl_tbl = Hashtbl.create 100
 let debug = true
 
 (* Instantiate abstract domain *)
-module Domain = AbstractDomain(Domain_congruences.CongruencesType)
+module Domain = AbstractDomain(Domain_congruences_and_intervals.CongruencesAndIntervalsType)
 open Domain
 
 let simpl_id e = Localizing.extent_unique_id e
@@ -66,10 +66,11 @@ let rec analyze_command gamma cmd = Domain.print_debug debug gamma cmd;
         (Hashtbl.add simpl_tbl loc_id Remove_True_Branch;
         List.fold_left analyze_command gamma blk2)
       | Unknown ->
-        let state_t = List.fold_left analyze_command gamma blk1 in
-        let state_f = List.fold_left analyze_command gamma blk2 in
+        let (init_g_t, init_g_f) = Domain.build_cond_states gamma expr in
+        let state_t = List.fold_left analyze_command init_g_t blk1 in
+        let state_f = List.fold_left analyze_command init_g_f blk2 in
         (Hashtbl.add simpl_tbl loc_id (Replace_Expr(Domain.simplify_expr gamma expr));
-        Domain.merge_states state_t state_f)
+        Domain.merge_states_if state_t state_f)
     end
   | Sc_proc_call _ -> gamma
 

@@ -8,6 +8,9 @@ module IntervalsType : Domains.DomainType = struct
   | PInfty (* + infinity *)
   | Int of int64
   type info_type = int_info * int_info
+  type spec_type =
+  | RangeLength of int64
+  | NoSpec
 
   let val_undetermined = MInfty, PInfty
 
@@ -127,12 +130,19 @@ module IntervalsType : Domains.DomainType = struct
     else if int_infos_lt false i22 i11 then false
     else raise Cannot_simplify_in_domain
 
-  let is_eq info1 info2 = match info1, info2 with
-  | (Int(i11), Int(i12)), (Int(i21), Int(i22)) ->
-    if Int64.equal i11 i12 && Int64.equal i12 i21 && Int64.equal i21 i22 then
-      true
-    else raise Cannot_simplify_in_domain
-  | _, _ -> raise Cannot_simplify_in_domain
+  let is_eq _ info1 info2 =
+    let (i11, i12) = info1 in
+    let (i21, i22) = info2 in
+    if int_infos_lt true i12 i21 then false
+    else if int_infos_lt true i22 i11 then false
+    else match i11, i12, i21, i22 with
+    | Int(i11), Int(i12), Int(i21), Int(i22) ->
+      begin
+        if Int64.equal i11 i12 && Int64.equal i12 i21 && Int64.equal i21 i22 then
+          true
+        else raise Cannot_simplify_in_domain
+      end
+    | _, _, _, _ -> raise Cannot_simplify_in_domain
 
   let binop_add_to_info info1 info2 =
     let (i11, i12) = info1 in
@@ -197,27 +207,53 @@ module IntervalsType : Domains.DomainType = struct
       | _, _ -> raise Cannot_simplify_in_domain
     end
 
-  let min_bound info1 info2 = match info1, info2 with
+  let min_bound b_extend info1 info2 = match info1, info2 with
   | MInfty, _ -> MInfty
   | PInfty, _ -> info2
-  | Int i1, Int i2 -> if Int64.compare i1 i2 < 0 then info1 else MInfty
+  | Int i1, Int i2 when b_extend -> if Int64.compare i1 i2 < 0 then info1 else MInfty
+  | Int i1, Int i2 -> if Int64.compare i1 i2 < 0 then info1 else info2
   | Int _, PInfty -> info1
   | _, _ -> MInfty
 
-  let max_bound info1 info2 = match info1, info2 with
+  let max_bound b_extend info1 info2 = match info1, info2 with
   | PInfty, _ -> PInfty
   | MInfty, _ -> info2
-  | Int i1, Int i2 -> if Int64.compare i1 i2 > 0 then info1 else PInfty
+  | Int i1, Int i2 when b_extend -> if Int64.compare i1 i2 > 0 then info1 else PInfty
+  | Int i1, Int i2 -> if Int64.compare i1 i2 > 0 then info1 else info2
   | Int _, MInfty -> info1
   | _, _ -> PInfty
 
-  let extend_info lst =
+  let extend_info b_extend lst =
     let rec extend_info_aux info1 info2 =
       if is_unchanged info1 info2 then info1
       else match info1, info2 with
-      | (i11, i12), (i21, i22) -> (min_bound i11 i21, max_bound i12 i22) in
+      | (i11, i12), (i21, i22) -> (min_bound b_extend i11 i21, max_bound b_extend i12 i22) in
     match lst with
     | [] -> val_undetermined
     | h::t -> List.fold_left extend_info_aux h t
+
+  let reduce_states_eq info1 info2 =
+    let (i11, i12) = info1 in
+    let (i21, i22) = info2 in
+    (max_bound false i11 i21, min_bound false i12 i22)
+
+  let reduce_states_neq info1 info2 = match info1, info2 with
+  | (inf11, inf12), (Int(i21), inf22) when int_infos_lt false inf12 inf22 ->
+    (inf11, Int(Int64.sub i21 Int64.one))
+  | (inf11, inf12), (inf21, Int(i22)) when int_infos_lt false inf21 inf11 ->
+    (Int(Int64.add i22 Int64.one), inf12)
+  | _, _ -> info1
+
+  let reduce_states_lt info1 info2 = match info1, info2 with
+  | (inf11, _), (Int(i21), _) ->
+    (inf11, Int(Int64.sub i21 Int64.one))
+  | _, _ -> info1
+
+  let reduce_states_gte info1 info2 = match info1, info2 with
+  | (inf11, inf12), (inf21, inf22) -> (inf12, inf22)
+
+  let count_possible info1 = match info1 with
+  | Int(i1), Int(i2) -> Int64.add Int64.one (Int64.sub i2 i1)
+  | _, _ -> raise Cannot_simplify_in_domain
 
 end
