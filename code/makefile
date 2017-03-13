@@ -36,7 +36,7 @@ ML_FILES=	localizing.ml \
 		static_analysis_init_vars.ml \
 		static_analysis_typing.ml \
 		domains.ml \
-		abstract_domain_with_boolean.ml \
+		domain_wrapper_boolean.ml \
 		abstract_domain.ml \
 		domain_congruences.ml \
 		domain_constants.ml \

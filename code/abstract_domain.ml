@@ -2,7 +2,7 @@ open Simple_java_syntax
 open Simple_java_display
 
 module AbstractDomain (Dom : Domains.DomainType) = struct
-  module DT = Abstract_domain_with_boolean.DomainWithBoolean(Dom)
+  module DT = Domain_wrapper_boolean.DomainWithBoolean(Dom)
   type var_state = DT.info_type
   open DT
 
