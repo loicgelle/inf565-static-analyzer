@@ -1,3 +1,9 @@
+*.aux
+.DS_Store
+*.log
+*.out
+*.odf
+*.synctex.gz
 java_lexer.ml
 java_parser.ml
 java_parser.mli
@@ -8,4 +14,4 @@ depend
 *.o
 *.cmo
 *.output
-
+_minted-report
