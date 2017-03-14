@@ -31,8 +31,10 @@ cd code && make
 * Exécuter les analyses statiques sur le fichier `p.java`
 
 ```
-./analyzer p.java
+./analyzer --domain i p.java
 ```
+
+où i indique le domaine à utiliser (0 : constantes ; 1 : intervalles ; 2 : congruences ; 3 : congruences et intervalles).
 
 ## Description des fichiers d'exemple
 

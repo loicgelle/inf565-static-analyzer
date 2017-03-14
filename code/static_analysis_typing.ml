@@ -1,7 +1,8 @@
-(* This file implements some simple static analysis *)
+(* This file implements a typing verification *)
 open Simple_java_syntax
 open Localizing
 
+(* Send the position in the source file to trace the error *)
 exception Typing_error of extent
 
 (* Part 3: detects typing errors *)

@@ -3,6 +3,7 @@
 open Localizing
 open Simple_java_syntax
 
+(* Send the position in source file (when possible) and an error message *)
 exception Interp_error of (string * (extent option))
 
 let error s e = raise (Interp_error(s, e))
@@ -25,6 +26,9 @@ type class_env = (string, class_inner_env) Hashtbl.t
 (* An environment associates a classname with its inner environment *)
 type env = (string, class_env) Hashtbl.t
 
+(* Printing functions *)
+(* ------------------ *)
+
 let print_var_value v_name v_val =
   let begstr = "   " ^ v_name ^ " = " in
   let valstr = match v_val with
@@ -40,6 +44,9 @@ let print_class_env cl_name cl_inn_env =
 
 let print_env gamma =
   Hashtbl.iter print_class_env gamma
+
+(* Interpreter functions *)
+(* --------------------- *)
 
 let rec interp_expr v_gamma expr =
   let loc = Some(snd expr) in
@@ -146,6 +153,7 @@ let init_class_env gamma s_cl =
     {procs = class_proc_gamma; vars = class_var_gamma}
 
 let init_env s_prg =
+  (* For Support.random function *)
   Random.self_init ();
   let gamma = Hashtbl.create 10 in
   List.iter (init_class_env gamma) s_prg; gamma

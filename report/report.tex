@@ -1,9 +1,10 @@
 \title{INF565 Project report}
 \documentclass[paper=a4, fontsize=11pt]{scrartcl}
+\usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fourier}
 
-\usepackage[english]{babel}
+\usepackage[francais]{babel}
 \usepackage[protrusion=true,expansion=true]{microtype}	
 \usepackage{amsmath,amsfonts,amsthm}
 \usepackage{hyperref}
@@ -32,7 +33,7 @@
 
 \title{	
 		\usefont{OT1}{bch}{b}{n}
-		\normalfont \normalsize \textsc{INF565 : Verification} \\ [25pt]
+		\normalfont \normalsize \textsc{INF565 : Vérification} \\ [25pt]
 		\horrule{0.5pt} \\[0.4cm]
 		\huge Analyseur statique pour un sous-ensemble de Java \\
 		\horrule{2pt} \\[0.5cm]
@@ -48,8 +49,73 @@
 %%% Begin document
 \begin{document}
 \maketitle
-\section{Example section}
+\section{Introduction}
 
-TODO.
+Ce court rapport a pour objet de présenter le travail effectué lors du projet du cours INF565 -- Vérification. La première partie sera consacrée à la description de la mise en place du projet et des premières vérifications effectuées. La partie suivante détaillent les extensions qui ont été implémentées et leurs motivations.\\
+
+Le code est disponible sur Github\footnote{Voir \url{https://github.com/loicgelle/inf565-static-analyzer}}. Des exemples sont fournis dans le dossier \texttt{code/examples/} du projet ; lorsque ce rapport fera référence à un fichier d'exemple, il le fera relativement à ce répertoire. Pour plus d'informations sur l'utilisation de l'analyseur et la structure du projet, on pourra se référer au fichier \texttt{README.md}.\\
+
+\textit{\textbf{Important :} toutes les analyses statiques effectuées dans le projet -- sauf l'analyse de typage -- supposent que le programme consiste en une seule classe contenant une seule fonction. L'analyse interprocédurale n'a pas été envisagée.}
+
+\section{Mise en place du projet et vérifications de base}
+
+\subsection{Mise en place et premières analyses statiques}
+
+Les premières étapes ont été l'implémentation d'une fonction d'affichage des programmes, à des fins de débogage, ainsi que d'un interpréteur. L'interprète suit simplement la structure de l'arbre syntaxique et modifie l'environnement -- une table de hashage qui associe à chaque variable sa valeur -- en conséquence.\\
+
+L'interpréteur est capable de lever des exceptions en cas de problème de typage ou d'utilisation d'une variable non initialisée. Le programme \texttt{typing\_bad/binary\_op.java} suivant
+
+\begin{minted}{java}
+class A {
+  static int x;
+  static boolean b1, b2;
+
+  static void main() {
+    x = 1;
+    b1 = true;
+    b2 = x + b1;
+  }
+}
+\end{minted}
+
+renvoie une erreur à l'interprétation :
+
+\begin{verbatim}
+$ ./analyzer --interpret A examples/typing_bad/binary_op.java
+examples/typing_bad/binary_op.java:8.9-15:
+Interpretation error!
+Cannot apply operator to non integer values
+\end{verbatim}
+
+De même, l'interpréteur échoue en cas d'utilisation d'une variable non initialisée, comme c'est le cas dans le fichier \texttt{init\_bad/condition.java} :
+
+\begin{verbatim}
+$ ./analyzer --interpret A examples/init_bad/condition.java
+examples/init_bad/condition.java:6.4-8.5:
+Interpretation error!
+IF statement needs a boolean value to test
+\end{verbatim}
+
+Cependant, ces erreurs devraient plutôt être anticipées dès l'analyse statique. L'analyseur statique permet de détecter l'utilisation de variables non initialisées avant l'exécution :
+
+\begin{verbatim}
+$ ./analyzer examples/init_bad/condition.java
+examples/init_bad/condition.java:6.8-10:
+Error: use of not initialized variable
+\end{verbatim}
+
+L'analyseur détecte l'initialisation des variables lorsque les flots de contrôle sont un peu plus complexe, comme c'est le cas pour \texttt{init\_good/double\_condition.java}.\\
+
+Une vérification statique des types a également été implémentée. Sur le programme mal typé présenté plus haut, l'analyseur détecte l'erreur de typage :
+
+\begin{verbatim}
+$ ./analyzer examples/typing_bad/binary_op.java
+examples/typing_bad/binary_op.java:8.9-15:
+Typing error
+\end{verbatim}
+
+\subsection{Analyses statiques plus poussées et simplifications}
+
+La première analyse statique concernant la valeur des variables est une analyse de constantes. Elle est dans l'approche assez similaire à l'analyse des variables non initialisées. L'analyse imprime l'environnement courant avant chaque instruction et l'environnement final.
 
 \end{document}

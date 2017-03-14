@@ -8,10 +8,12 @@ open Localizing
 
 let usage = "usage: ./analyzer [options] file.java"
 let interpret_class = ref ""
+let domain_id = ref 0
 
 let spec =
   [
     "--interpret", Arg.Set_string interpret_class, "  interpret function main of given class";
+    "--domain", Arg.Set_int domain_id, "  specify abstract domain (0: constants; 1: intervals; 2: congruences; 3: congruences & intervals)";
   ]
 
 let main () =
@@ -40,13 +42,23 @@ let main () =
         (* Performs typing static analysis *)
         Static_analysis_typing.check_typing prg;
         (* Performs variable static analysis and program simplification *)
-        (* The domain used - constants, intervals, congruences, ... - has
-         * to be precised in the module Static_analysis_variables *)
         (* Simplifications performed:
          * - dead code elimination
          * - simplification of expressions when possible *)
-        let simpl_prg = Static_analysis_variables.variables_analysis prg in
-        (* Prints simplified program *)
+        let simpl_prg = match !domain_id with
+        | 0 ->
+          let module StaticAnalysisModule = StaticAnalysis(Domain_constants.ConstantsType) in
+          StaticAnalysisModule.variables_analysis prg
+        | 1 ->
+          let module StaticAnalysisModule = StaticAnalysis(Domain_intervals.IntervalsType) in
+          StaticAnalysisModule.variables_analysis prg
+        | 2 ->
+          let module StaticAnalysisModule = StaticAnalysis(Domain_congruences.CongruencesType) in
+          StaticAnalysisModule.variables_analysis prg
+        | _ ->
+          let module StaticAnalysisModule = StaticAnalysis(Domain_congruences_and_intervals.CongruencesAndIntervalsType) in
+          StaticAnalysisModule.variables_analysis prg in
+        (* Prints simplified print_program*)
         Simple_java_display.print_program simpl_prg
       end
     with

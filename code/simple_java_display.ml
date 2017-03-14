@@ -1,7 +1,9 @@
 (* This file allows printing programs from Simple Java syntax *)
+(* Printing functions contain a left shift for pretty printing *)
 
 open Simple_java_syntax
 
+(* Tabulation between different levels *)
 let shiftStr = "  "
 
 let str_of_type = function

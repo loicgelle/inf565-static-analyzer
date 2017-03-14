@@ -1,21 +1,22 @@
-(* This file implements some simple static analysis *)
+(* This file implements a detection of use on non initialized variable *)
+(* ASSUMING that the program consists of one function ONLY *)
 open Simple_java_syntax
 open Localizing
 
+(* Send the position in the source file to trace the error *)
 exception Not_init_var_error of extent
 
-(* Part 2: detects use of uninitialized variables *)
-(* ASSUMING that the program consists of one function ONLY *)
 type var_state =
   | Initialized
   | Maybe_not_initialized
-type analysis2_env = (int, var_state) Hashtbl.t
+type analysis_env = (int, var_state) Hashtbl.t
 
 let rec list_inter_aux acc lst1 = function
 | [] -> acc
 | h::q when List.mem h lst1 -> list_inter_aux (h::acc) lst1 q
 | h::q -> list_inter_aux acc lst1 q
 
+(* Computes list intersection *)
 let list_inter lst1 lst2 =
   list_inter_aux [] lst1 lst2
 
@@ -47,6 +48,7 @@ let set_initialized gamma id =
   | Not_found ->
     Hashtbl.add gamma id Initialized
 
+(* Raise an error if used var is not initialized *)
 let check_critical_var loc gamma id =
   if not (is_initialized gamma id) then
     raise(Not_init_var_error loc)
@@ -71,6 +73,7 @@ let check_var_decl gamma vd =
   | Some e ->
     (check_expr gamma e; set_initialized gamma var.s_var_uniqueId)
 
+(* Auxiliary functions listing variables that are assigned *)
 let rec list_assigned_in_block_aux acc = function
 | [] -> acc
 | (Sc_assign(v, _), _)::q ->
@@ -87,6 +90,9 @@ and list_assigned_in_if blk1 blk2 =
   let lst2 = list_assigned_in_block blk2 in
   list_inter lst1 lst2
 
+(* The boolean b_do_not_init launches the analysis in a "fake mode"
+ * in which assignments are ignored. This is useful when control
+ * flow is not certain, in the case of loops and conditions *)
 let rec check_command gamma b_do_not_init cmd = match fst cmd with
 | Sc_assign(v, expr) ->
   begin
