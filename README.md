@@ -34,7 +34,7 @@ cd code && make
 ./analyzer --domain i p.java
 ```
 
-où i indique le domaine à utiliser (0 : constantes ; 1 : intervalles ; 2 : congruences ; 3 : congruences et intervalles).
+où `i` indique le domaine à utiliser (0 : constantes ; 1 : intervalles ; 2 : congruences ; 3 : congruences et intervalles).
 
 ## Description des fichiers d'exemple
 
