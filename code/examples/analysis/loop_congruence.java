@@ -3,18 +3,16 @@ class A {
   static boolean b1, b2;
 
   static void main() {
-    x = 1;
+    x = 0;
     y = 1;
-    while (x < 7) {
-      x = x + 1;
-      y = y * 2;
+    while (y < 1000) {
+      x = x + 2;
+      y = y + 1;
     }
-    if (y < 1) {
+    if (x == 3) {
       b1 = true;
-      b2 = false;
     } else {
       b1 = false;
-      b2 = true;
     }
   }
 }

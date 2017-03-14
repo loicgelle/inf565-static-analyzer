@@ -50,9 +50,9 @@ module CongruencesType : Domains.DomainType = struct
   | Cst(i1), Cst(i2) ->
     (Int64.compare i1 i2) = 0
   | Cst(i1), Congruence(a, b) ->
-    if Int64.equal (rem i1 a) (rem b a) then raise Cannot_simplify_in_domain else false
+    if Int64.equal (rem i1 b) (rem a b) then raise Cannot_simplify_in_domain else false
   | Congruence(a, b), Cst(i2) ->
-    if Int64.equal (rem i2 a) (rem b a) then begin
+    if Int64.equal (rem i2 b) (rem a b) then begin
       match spec with
       | RangeLength l when Int64.compare l a < 0 -> true
       | _  -> raise Cannot_simplify_in_domain

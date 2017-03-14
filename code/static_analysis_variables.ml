@@ -14,9 +14,6 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
 
   let simpl_tbl = Hashtbl.create 100
 
-  (* Print debug information *)
-  let debug = true
-
   module Domain = AbstractDomain(Dom)
   open Domain
 
@@ -31,7 +28,7 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
         | Some new_h -> aux ((List.rev new_h)@acc) t)
     in List.rev (aux [] lst)
 
-  let rec analyze_command gamma cmd = Domain.print_debug debug gamma cmd;
+  let rec analyze_command b_debug gamma cmd = Domain.print_debug b_debug gamma cmd;
     let loc_id = simpl_id (snd cmd) in match fst cmd with
     | Sc_assign(v, expr) ->
       begin
@@ -47,7 +44,7 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
     | Sc_assert _ -> gamma
     | Sc_while(expr, blk) ->
       begin
-        let commands_fun g = List.fold_left analyze_command g blk in
+        let commands_fun g = List.fold_left (analyze_command b_debug) g blk in
         let new_gamma = Domain.compute_loop_final_state commands_fun gamma expr in
         (match Domain.check_condition gamma expr with
         | Not_verified ->
@@ -60,14 +57,14 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
         match (Domain.check_condition gamma expr) with
         | Verified ->
           (Hashtbl.add simpl_tbl loc_id Remove_False_Branch;
-          List.fold_left analyze_command gamma blk1)
+          List.fold_left (analyze_command b_debug) gamma blk1)
         | Not_verified ->
           (Hashtbl.add simpl_tbl loc_id Remove_True_Branch;
-          List.fold_left analyze_command gamma blk2)
+          List.fold_left (analyze_command b_debug) gamma blk2)
         | Unknown ->
           let (init_g_t, init_g_f) = Domain.build_cond_states gamma expr in
-          let state_t = List.fold_left analyze_command init_g_t blk1 in
-          let state_f = List.fold_left analyze_command init_g_f blk2 in
+          let state_t = List.fold_left (analyze_command b_debug) init_g_t blk1 in
+          let state_f = List.fold_left (analyze_command b_debug) init_g_f blk2 in
           (Hashtbl.add simpl_tbl loc_id (Replace_Expr(Domain.simplify_expr gamma expr));
           Domain.merge_states_if state_t state_f)
       end
@@ -113,8 +110,8 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
       end
     | _ -> Some([cmd])
 
-  let analyze_proc gamma pr =
-    List.fold_left analyze_command gamma pr.s_proc_body
+  let analyze_proc b_debug gamma pr =
+    List.fold_left (analyze_command b_debug) gamma pr.s_proc_body
 
   let simplify_proc pr =
     { s_proc_name = pr.s_proc_name;
@@ -127,11 +124,11 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
     | None -> Domain.set_var_state gamma var.s_var_uniqueId undet_st
     | Some e -> Domain.set_var_state gamma var.s_var_uniqueId (Domain.compute_expr_state gamma e)
 
-  let analyze_decl gamma = function
+  let analyze_decl b_debug gamma = function
   | Sd_var vd ->
     analyze_var_decl gamma vd
   | Sd_function p ->
-    analyze_proc gamma p
+    analyze_proc b_debug gamma p
 
   let simplify_decl = function
   | Sd_var vd ->
@@ -139,17 +136,17 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
   | Sd_function p ->
     Sd_function(simplify_proc p)
 
-  let analyze_class cl =
+  let analyze_class b_debug cl =
     let gamma = Domain.return_empty_state () in
-    let final_gamma = List.fold_left analyze_decl gamma cl.s_class_body in
-    Domain.print_final_debug debug final_gamma
+    let final_gamma = List.fold_left (analyze_decl b_debug) gamma cl.s_class_body in
+    Domain.print_final_state final_gamma
 
   let simplify_class cl =
     { s_class_name = cl.s_class_name;
       s_class_body = List.map simplify_decl cl.s_class_body }
 
-  let variables_analysis prg =
+  let variables_analysis b_debug prg =
     (* I use List.iter although I expect programs with one class only... *)
-    List.iter analyze_class prg;
+    List.iter (analyze_class b_debug) prg;
     List.map simplify_class prg
 end

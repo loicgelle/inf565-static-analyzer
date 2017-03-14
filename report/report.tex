@@ -61,7 +61,7 @@ Le code est disponible sur Github\footnote{Voir \url{https://github.com/loicgell
 
 \subsection{Mise en place et premières analyses statiques}
 
-Les premières étapes ont été l'implémentation d'une fonction d'affichage des programmes, à des fins de débogage, ainsi que d'un interpréteur. L'interprète suit simplement la structure de l'arbre syntaxique et modifie l'environnement -- une table de hashage qui associe à chaque variable sa valeur -- en conséquence.\\
+Les premières étapes ont été l'implémentation d'une fonction d'affichage des programmes, à des fins de débogage, ainsi que d'un interpréteur. L'interprète suit simplement la structure de l'arbre syntaxique et modifie l'environnement -- une table de hachage qui associe à chaque variable sa valeur -- en conséquence.\\
 
 L'interpréteur est capable de lever des exceptions en cas de problème de typage ou d'utilisation d'une variable non initialisée. Le programme \texttt{typing\_bad/binary\_op.java} suivant
 
@@ -116,6 +116,286 @@ Typing error
 
 \subsection{Analyses statiques plus poussées et simplifications}
 
-La première analyse statique concernant la valeur des variables est une analyse de constantes. Elle est dans l'approche assez similaire à l'analyse des variables non initialisées. L'analyse imprime l'environnement courant avant chaque instruction et l'environnement final.
+La première analyse statique concernant la valeur des variables est une analyse de constantes. Elle est dans l'approche assez similaire à l'analyse des variables non initialisées. Si le mode de débogage est activé, avec l'option \texttt{-{}-debug}, l'analyseur imprime l'environnement du programme avant chaque instruction analysée. Dans tous les cas, il imprime à la fin l'environnement final ainsi que le programme obtenu après éventuelles simplifications.\\
+
+Cette première analyse a été l'occasion de se pencher sur la gestion des boucles. Dans le cas de boucles courtes, l'analyseur termine et renvoie un environnement précis, comme c'est le cas pour le fichier \texttt{examples/analysis/short\_loop.java} :
+
+\begin{verbatim}
+$ ./analyzer --domain 0 examples/analysis/short_loop.java
+FINAL STATE IS:
+0 -> int: 7
+1 -> int: 64
+2 -> bool: false
+3 -> bool: true
+----------
+Class name: A
+Class body:
+   Declaration of variable:
+     Variable:
+       name: x | type: int | uniqueId: 0
+   Declaration of variable:
+     Variable:
+       name: y | type: int | uniqueId: 1
+   Declaration of variable:
+     Variable:
+       name: b1 | type: bool | uniqueId: 2
+   Declaration of variable:
+     Variable:
+       name: b2 | type: bool | uniqueId: 3
+   Declaration of function:
+     Proc name: main
+     Proc body:
+        x <- 1
+        y <- 1
+        while ((x < 7)) do:
+            x <- (x + 1)
+            y <- (y * 2)
+        b1 <- false
+        b2 <- true
+------------
+\end{verbatim}
+
+Dans le cas de boucles plus "longues", l'analyse ne peut pas prendre le risque d'exécuter des centaines de tours de boucle, voire de boucler indéfiniment. A partir d'un certain nombre de tours de boucle exécutés par l'analyse abstraite, l'analyseur renvoie une surapproximation de l'état obtenu en sortie de boucle. Dans le cas d'une analyse de constante, il est forcé de considérer comme indéterminées toutes les variables qui sont modifiées dans le corps d'une boucle. Le programme précédent en version "longue", \texttt{examples/analysis/long\_loop.java}, est analysé de cette manière :
+
+\begin{verbatim}
+$ ./analyzer --domain 0 examples/analysis/long_loop.java
+FINAL STATE IS:
+0 -> int: undetermined
+1 -> int: undetermined
+2 -> bool: undetermined
+3 -> bool: undetermined
+----------
+Class name: A
+Class body:
+   Declaration of variable:
+     Variable:
+       name: x | type: int | uniqueId: 0
+   Declaration of variable:
+     Variable:
+       name: y | type: int | uniqueId: 1
+   Declaration of variable:
+     Variable:
+       name: b1 | type: bool | uniqueId: 2
+   Declaration of variable:
+     Variable:
+       name: b2 | type: bool | uniqueId: 3
+   Declaration of function:
+     Proc name: main
+     Proc body:
+        x <- 1
+        y <- 1
+        while ((x < 100)) do:
+            x <- (x + 1)
+            y <- (y * 2)
+        if ((y < 1)) then:
+            b1 <- true
+            b2 <- false
+        else:
+            b1 <- false
+            b2 <- true
+------------
+\end{verbatim}
+
+On voit bien les limites de l'analyse de constantes sur un tel exemple. On aimerait pouvoir conclure que $y \geq 1$ en tout instant de l'exécution du programme et donc se débarrasser d'une partie de la structure conditionnelle finale.\\
+
+L'analyse d'intervalles s'en sort mieux sur cet exemple. On obtient cette fois-ci :
+\begin{verbatim}
+$ ./analyzer --domain 1 examples/analysis/long_loop.java
+FINAL STATE IS:
+0 -> int: [1, +infty]
+1 -> int: [1, +infty]
+2 -> bool: false
+3 -> bool: true
+----------
+Class name: A
+Class body:
+   Declaration of variable:
+     Variable:
+       name: x | type: int | uniqueId: 0
+   Declaration of variable:
+     Variable:
+       name: y | type: int | uniqueId: 1
+   Declaration of variable:
+     Variable:
+       name: b1 | type: bool | uniqueId: 2
+   Declaration of variable:
+     Variable:
+       name: b2 | type: bool | uniqueId: 3
+   Declaration of function:
+     Proc name: main
+     Proc body:
+        x <- 1
+        y <- 1
+        while ((x < 100)) do:
+            x <- (x + 1)
+            y <- (y * 2)
+        b1 <- false
+        b2 <- true
+------------
+\end{verbatim}
+
+L'analyseur comprend que les deux variables entières ne font que croître dans le corps de la boucle : il donne donc une surapproximation qui conserve toutefois une bonne inférieure assez précise sur les variables. Il peut donc évaluer à \texttt{false} la condition en fin de programme, et stocke dans une table de hachage dédiée aux simplifications que la branche \texttt{true} de la structure conditionnelle est inutile ; une deuxième passe sur l'arbre syntaxique se sert des informations contenues dans cette table de hachage pour renvoyer un arbre syntaxique simplifié.\\
+
+Ces premières analyses statiques de variables ont donné lieu à une première passe de refactorisation du code :
+
+\begin{itemize}
+\item La gestion de l'arbre syntaxique du programme est réalisée dans le fichier \newline \texttt{static\_analysis\_variables.ml} ;
+\item Ce dernier utilise le foncteur contenu dans \texttt{abstract\_domain.ml}, lequel gère les environnements de variables -- intersections, fusions -- et les structures complexes du langage -- conditions, boucles ;
+\item Enfin, les opérations primitives propres au domaine abstrait sont réalisées dans les modules \texttt{domain\_constants.ml} et \texttt{domain\_intervals.ml}, lesquels implémentent l'interface de module définie dans \texttt{domains.ml}.
+\end{itemize}
+
+\section{Extensions et raffinement de l'analyseur}
+
+Les développement décrits précédemment ainsi que les tests réalisés ont mis en lumière des améliorations possibles de l'analyseur. Celles qui ont été implémentées sont évoquées dans les parties qui suivent.
+
+\subsection{Refactorisation de l'analyse de booléens}
+
+La gestion des types booléens a donné lieu à de la duplication de code dans les domaines abstraits des constantes et des intervalles. Chacun avait en effet un type d'information spécial pour les variables booléennes, qu'il gérait exactement de la même manière que l'autre.\\
+
+Pour remédier à cela, un foncteur \texttt{domain\_wrapper\_boolean} a été développé. Il gère les variables booléennes lors de l'analyse, et passe la main au domaine abstrait actif lorsqu'il s'agit de gérer des informations sur les entiers.
+
+\subsection{Meilleure gestion des structures conditionnelles}
+
+L'analyse précédemment décrite ne parvenait pas à tirer d'informations intéressantes du programme \texttt{examples/analysis/condition.java} :
+
+\begin{minted}{java}
+class A {
+  static int x, y;
+  static boolean b1, b2;
+
+  static void main() {
+    x = Support.random(0, 4);
+    if (x < 2) {
+      x = x + 1;
+    } else {
+      x = x - 1;
+    }
+  }
+}
+\end{minted}
+
+En faisant une disjonction de cas, on se rend compte que la variable \texttt{x} ne peut être égale, en sortie de programme, qu'à 1 ou à 2. Pour que l'analyseur soit capable de le déduire, l'analyse des structures a été affinée et chaque bloc de la structure est analysé \textit{relativement} au fait que la condition est vraie ou fausse. Plus clairement, le premier bloc est évalué comme si la condition était vraie, et le deuxième comme si la condition était fausse. Les deux environnements que l'on déduit ensuite sont fusionnés pour donner l'environnement final en sortie de structure :
+
+\begin{verbatim}
+$ ./analyzer --domain 1 examples/analysis/condition.java
+FINAL STATE IS:
+0 -> int: [1, 2]
+1 -> int: [-infty, +infty]
+2 -> bool: undetermined
+3 -> bool: undetermined
+----------
+Class name: A
+Class body:
+   Declaration of variable:
+     Variable:
+       name: x | type: int | uniqueId: 0
+   Declaration of variable:
+     Variable:
+       name: y | type: int | uniqueId: 1
+   Declaration of variable:
+     Variable:
+       name: b1 | type: bool | uniqueId: 2
+   Declaration of variable:
+     Variable:
+       name: b2 | type: bool | uniqueId: 3
+   Declaration of function:
+     Proc name: main
+     Proc body:
+        x <- random(0, 4)
+        if ((x < 2)) then:
+            x <- (x + 1)
+        else:
+            x <- (x - 1)
+------------
+\end{verbatim}
+
+\subsection{Analyse de congruences}
+
+Une analyse simple des congruences a été développée. Sur le fichier d'exemple \texttt{examples/analysis/loop\_congruence.java}, l'analyse détecte que la variable \texttt{x} reste paire tout au long de l'exécution, et peut donc se débarrasser d'une partie du programme :
+
+\begin{verbatim}
+$ ./analyzer --domain 2 examples/analysis/loop_congruence.java
+FINAL STATE IS:
+0 -> int: = 0 [2]
+1 -> int: = 0 [1]
+2 -> bool: false
+3 -> bool: undetermined
+----------
+Class name: A
+Class body:
+   Declaration of variable:
+     Variable:
+       name: x | type: int | uniqueId: 0
+   Declaration of variable:
+     Variable:
+       name: y | type: int | uniqueId: 1
+   Declaration of variable:
+     Variable:
+       name: b1 | type: bool | uniqueId: 2
+   Declaration of variable:
+     Variable:
+       name: b2 | type: bool | uniqueId: 3
+   Declaration of function:
+     Proc name: main
+     Proc body:
+        x <- 0
+        y <- 1
+        while ((y < 1000)) do:
+            x <- (x + 2)
+            y <- (y + 1)
+        b1 <- false
+------------
+\end{verbatim}
+
+On remarquera au passage que j'ai pris la liberté d'ajouter au projet la gestion de l'égalité \texttt{==}, qui donne des cas de tests plus intéressants en ce qui concerne les congruences.
+
+\subsection{Analyse couplée de congruences et d'intervalles}
+
+Une analyse plus puissante que les précédentes consisterait à faire communiquer les domaines abstraits des intervalles et des congruences pour partager les informations. La première étape vers cette analyse a été de définir le produit réduit des deux domaines dans le module \texttt{domain\_congruences\_and\_intervals.ml}. Essentiellement, ce domaine abstrait contient à la fois les informations des deux domaines précédents. J'ai implémenté un partage utile d'informations entre les domaines pour le seul cas du test d'égalité. Ce partage consiste à appeler la fonction du domaine des congruences qui teste l'égalité entre deux informations, mais en lui fournissant en plus une information sur la longueur des intervalles en jeu, s'ils sont connus.\\
+
+Pour le cas du fichier \texttt{examples/analysis/coupling.java}, cela donne des résultats satisfaisants :
+
+\begin{verbatim}
+$ ./analyzer --domain 3 examples/analysis/coupling.java
+FINAL STATE IS:
+0 -> int: (= 2 [4], [2, 4])
+1 -> int: (1, [1, 1])
+2 -> bool: true
+3 -> bool: undetermined
+----------
+Class name: A
+Class body:
+   Declaration of variable:
+     Variable:
+       name: x | type: int | uniqueId: 0
+   Declaration of variable:
+     Variable:
+       name: y | type: int | uniqueId: 1
+   Declaration of variable:
+     Variable:
+       name: b1 | type: bool | uniqueId: 2
+   Declaration of variable:
+     Variable:
+       name: b2 | type: bool | uniqueId: 3
+   Declaration of function:
+     Proc name: main
+     Proc body:
+        x <- 1
+        while ((x < 100)) do:
+            x <- (x + 4)
+        y <- 1
+        if ((x < 4)) then:
+            x <- (x + 1)
+        else:
+            x <- 2
+        b1 <- true
+------------
+\end{verbatim}
+
+On peut d'ailleurs vérifier qu'aucun des deux domaines, pris séparément, ne donne autant d'informations.
+
+\section{Conclusion}
+
+
 
 \end{document}

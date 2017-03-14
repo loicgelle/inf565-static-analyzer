@@ -9,11 +9,13 @@ open Localizing
 let usage = "usage: ./analyzer [options] file.java"
 let interpret_class = ref ""
 let domain_id = ref 0
+let debug = ref false
 
 let spec =
   [
     "--interpret", Arg.Set_string interpret_class, "  interpret function main of given class";
     "--domain", Arg.Set_int domain_id, "  specify abstract domain (0: constants; 1: intervals; 2: congruences; 3: congruences & intervals)";
+    "--debug", Arg.Set debug, "  display useful information for debugging"
   ]
 
 let main () =
@@ -48,16 +50,16 @@ let main () =
         let simpl_prg = match !domain_id with
         | 0 ->
           let module StaticAnalysisModule = StaticAnalysis(Domain_constants.ConstantsType) in
-          StaticAnalysisModule.variables_analysis prg
+          StaticAnalysisModule.variables_analysis !debug prg
         | 1 ->
           let module StaticAnalysisModule = StaticAnalysis(Domain_intervals.IntervalsType) in
-          StaticAnalysisModule.variables_analysis prg
+          StaticAnalysisModule.variables_analysis !debug prg
         | 2 ->
           let module StaticAnalysisModule = StaticAnalysis(Domain_congruences.CongruencesType) in
-          StaticAnalysisModule.variables_analysis prg
+          StaticAnalysisModule.variables_analysis !debug prg
         | _ ->
           let module StaticAnalysisModule = StaticAnalysis(Domain_congruences_and_intervals.CongruencesAndIntervalsType) in
-          StaticAnalysisModule.variables_analysis prg in
+          StaticAnalysisModule.variables_analysis !debug prg in
         (* Prints simplified print_program*)
         Simple_java_display.print_program simpl_prg
       end

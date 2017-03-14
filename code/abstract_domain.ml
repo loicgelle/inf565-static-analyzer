@@ -31,7 +31,7 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
     print_state gamma;
     print_endline "----------")
 
-  let print_final_debug debug gamma = if not debug then () else
+  let print_final_state gamma =
     (print_endline "FINAL STATE IS:";
     print_state gamma;
     print_endline "----------")

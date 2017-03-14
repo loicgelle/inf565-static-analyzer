@@ -5,7 +5,7 @@ class A {
   static void main() {
     x = 1;
     y = 1;
-    while (x < 7) {
+    while (x < 100) {
       x = x + 1;
       y = y * 2;
     }
