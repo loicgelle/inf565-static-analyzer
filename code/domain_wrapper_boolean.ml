@@ -1,6 +1,7 @@
 open Simple_java_syntax
 open Simple_java_display
 
+(* See similar interface in domains.ml for comments and information *)
 module DomainWithBoolean(Dom: Domains.DomainType) = struct
   open Dom
   exception Cannot_simplify

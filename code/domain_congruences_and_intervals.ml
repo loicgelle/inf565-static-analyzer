@@ -1,5 +1,6 @@
 open Simple_java_syntax
 
+(* See interface in domains.ml for comments and information *)
 module CongruencesAndIntervalsType : Domains.DomainType = struct
   exception Cannot_simplify_in_domain
 
@@ -30,6 +31,7 @@ module CongruencesAndIntervalsType : Domains.DomainType = struct
     with
     | I.Cannot_simplify_in_domain -> raise Cannot_simplify_in_domain
 
+  (* Coupled analysis for equality *)
   let is_eq _ info1 info2 =
     try
       I.is_eq I.NoSpec (snd info1) (snd info2)
@@ -37,6 +39,7 @@ module CongruencesAndIntervalsType : Domains.DomainType = struct
     | I.Cannot_simplify_in_domain ->
       begin
         try
+          (* Give interval length information to congruence domain *)
           let info = C.RangeLength(I.count_possible (snd info2)) in
           C.is_eq info (fst info1) (fst info2)
         with

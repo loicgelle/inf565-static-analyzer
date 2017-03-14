@@ -5,6 +5,7 @@ open Simple_java_syntax
 open Abstract_domain
 
 module StaticAnalysis (Dom : Domains.DomainType) = struct
+  (* Possible simplifications in the AST *)
   type simplification =
   | Remove_Instr
   | Remove_True_Branch
@@ -12,13 +13,16 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
   | Remove_While
   | Replace_Expr of s_expr_e
 
+  (* Hashtable to store simplifications *)
   let simpl_tbl = Hashtbl.create 100
 
   module Domain = AbstractDomain(Dom)
   open Domain
 
+  (* Associates a unique id to an expression for further simplification *)
   let simpl_id e = Localizing.extent_unique_id e
 
+  (* Removes None values from a list *)
   let map_ignore_none mapfun lst =
     let rec aux acc = function
     | [] -> acc
@@ -28,6 +32,8 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
         | Some new_h -> aux ((List.rev new_h)@acc) t)
     in List.rev (aux [] lst)
 
+  (* AST structure handlers and simplifiers *)
+  (* -------------------------------------- *)
   let rec analyze_command b_debug gamma cmd = Domain.print_debug b_debug gamma cmd;
     let loc_id = simpl_id (snd cmd) in match fst cmd with
     | Sc_assign(v, expr) ->
@@ -145,6 +151,7 @@ module StaticAnalysis (Dom : Domains.DomainType) = struct
     { s_class_name = cl.s_class_name;
       s_class_body = List.map simplify_decl cl.s_class_body }
 
+  (* Analysis entry point *)
   let variables_analysis b_debug prg =
     (* I use List.iter although I expect programs with one class only... *)
     List.iter (analyze_class b_debug) prg;

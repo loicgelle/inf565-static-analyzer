@@ -1,5 +1,6 @@
 open Simple_java_syntax
 
+(* See interface in domains.ml for comments and information *)
 module CongruencesType : Domains.DomainType = struct
   exception Cannot_simplify_in_domain
 
@@ -19,6 +20,7 @@ module CongruencesType : Domains.DomainType = struct
 
   let const_to_info i = Cst(i)
 
+  (* Computes POSITIVE remainder *)
   let rem i1 i2 =
     let r = Int64.rem i1 i2 in
     if Int64.compare r Int64.zero < 0 then Int64.add r i2 else r

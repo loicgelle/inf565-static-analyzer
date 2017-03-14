@@ -1,5 +1,6 @@
 open Simple_java_syntax
 
+(* See interface in domains.ml for comments and information *)
 module ConstantsType : Domains.DomainType = struct
   exception Cannot_simplify_in_domain
 

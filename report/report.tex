@@ -396,6 +396,8 @@ On peut d'ailleurs vérifier qu'aucun des deux domaines, pris séparément, ne d
 
 \section{Conclusion}
 
+L'analyseur semble bien fonctionner dans le cas de programmes simples. Certaines idées d'extensions peuvent encore être améliorées pour prendre en compte plus de situations courantes. On peut notamment penser à une analyse qui transforme des boucles \texttt{while} en des boucles \texttt{for} lorsque cela est possible, ce qui est très utile en vue d'optimiser la compilation après l'analyse.\\
 
+S'il est évident qu'un analyseur doit pouvoir effectuer des analyses interprocédurales pour être réellement utile à un compilateur, c'est une fonctionnalité qui n'a pas été implémentée dans le cadre du projet. Il me semblait en effet plus intéressant de me pencher tout d'abord sur l'amélioration des analyses statiques, la prise en charge des appels de fonctions relevant surtout de difficultés d'implémentations et non de difficultés théoriques.
 
 \end{document}

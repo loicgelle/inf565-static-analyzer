@@ -1,6 +1,7 @@
 open Simple_java_syntax
 open Simple_java_display
 
+(* Module handling abstract variable environments *)
 module AbstractDomain (Dom : Domains.DomainType) = struct
   module DT = Domain_wrapper_boolean.DomainWithBoolean(Dom)
   type var_state = DT.info_type
@@ -13,12 +14,17 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
 
   module VarState = Map.Make(struct type t = int let compare = compare end)
 
+  (* Number of abstract interpretation of inner loop commands before
+   * the analyzer gives up *)
   let max_loop_rounds = 10
 
   let return_empty_state () = VarState.empty
+  (* Undetermined value for boolean and integer variables *)
   let val_undetermined_bool = DT.val_undetermined_bool
   let val_undetermined_int = DT.val_undetermined_int
 
+  (* Printing functions *)
+  (* ------------------ *)
   let print_state gamma =
     let aux a b =
       print_endline ((string_of_int a) ^ " -> " ^ (DT.str_of_state b)) in
@@ -36,6 +42,8 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
     print_state gamma;
     print_endline "----------")
 
+  (* Helper functions *)
+  (* ---------------- *)
   let get_var_state is_boolean gamma id =
     try
       VarState.find id gamma
@@ -54,6 +62,8 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
     | None, None -> None in
     VarState.merge merge_func g1 g2
 
+  (* AST analysis *)
+  (* ------------ *)
   let rec compute_expr_state gamma expr = match fst expr with
   | Se_const c -> DT.const_to_info c
   | Se_random(i1, i2) -> DT.random_to_info i1 i2
@@ -137,6 +147,7 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
     else if DT.is_false st then Not_verified
     else Unknown
 
+  (* Compute variables that changed between two environment states *)
   let compute_changed_vars g1 g2 =
     let merge_func key a b = match a, b with
     | Some v1, Some v2 when v1 = v2 -> None
@@ -155,6 +166,8 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
 
   let is_unchanged = DT.is_unchanged
 
+  (* Computes an overapproximation for WHILE loops based on
+   * a sequence of states *)
   let states_union gammalst =
     let merge_func key a b = match a, b with
     | Some v1, Some v2 -> Some(v2::v1)
@@ -165,6 +178,8 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
     let gamma_lst_states = List.fold_left (VarState.merge merge_func) empty_gamma gammalst in
     VarState.map (DT.extend_info true) gamma_lst_states
 
+  (* Computes an overapproximation for IF / ELSE structures based on
+   * true block and false block states *)
   let merge_states_if g1 g2 =
     let merge_func key a b = match a, b with
     | Some v1, Some v2 -> Some(v2::v1)
@@ -175,6 +190,9 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
     let gamma_lst_states = List.fold_left (VarState.merge merge_func) empty_gamma [g1; g2] in
     VarState.map (DT.extend_info false) gamma_lst_states
 
+  (* Compute conditionned environments to give to inner IF / ELSE blocks *)
+  (* Output the environment in case the condition is true
+     AND the environment in case the condition is false *)
   let rec build_cond_states gamma expr = match fst expr with
   | Se_binary(Sb_eq, e1, e2) ->
     begin
@@ -212,7 +230,7 @@ module AbstractDomain (Dom : Domains.DomainType) = struct
     end
   | _ -> gamma, gamma
 
-
+  (* Handle WHILE loop structure *)
   let compute_loop_final_state cmd_fun init_gamma expr =
     let rec aux cnt saved_gammas gamma =
       begin
