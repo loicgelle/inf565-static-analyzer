@@ -42,8 +42,12 @@ où `i` indique le domaine à utiliser (0 : constantes ; 1 : intervalles ; 2 : c
 
 ## Description des fichiers d'exemple
 
-Des fichiers Java d'exemple et de test sont fournis dans le répertoire `code/examples/`. Plus d'informations à venir.
+Des fichiers Java d'exemple et de test sont fournis dans le répertoire `code/examples/` :
 
+* `typing_bad/*` : programmes mal typés
+* `init_bad/*` : programmes utilisant des variables non initialisées
+* `init_good/*` : programmes corrects, pour tester l'analyse de variables non initialisées
+* `analysis/` : programmes corrects, pour tester l'analyse statique de variables
 
 ## Structure du projet
 
