@@ -51,7 +51,7 @@
 \maketitle
 \section{Introduction}
 
-Ce court rapport a pour objet de présenter le travail effectué lors du projet du cours INF565 -- Vérification. La première partie sera consacrée à la description de la mise en place du projet et des premières vérifications effectuées. La partie suivante détaillent les extensions qui ont été implémentées et leurs motivations.\\
+Ce rapport a pour objet de présenter le travail effectué lors du projet du cours INF565 -- Vérification. La première partie sera consacrée à la description de la mise en place du projet et des premières vérifications effectuées. La partie suivante détaille les extensions qui ont été implémentées et leurs motivations.\\
 
 Le code est disponible sur Github\footnote{Voir \url{https://github.com/loicgelle/inf565-static-analyzer}}. Des exemples sont fournis dans le dossier \texttt{code/examples/} du projet ; lorsque ce rapport fera référence à un fichier d'exemple, il le fera relativement à ce répertoire. Pour plus d'informations sur l'utilisation de l'analyseur et la structure du projet, on pourra se référer au fichier \texttt{README.md}.\\
 
@@ -104,7 +104,7 @@ examples/init_bad/condition.java:6.8-10:
 Error: use of not initialized variable
 \end{verbatim}
 
-L'analyseur détecte l'initialisation des variables lorsque les flots de contrôle sont un peu plus complexe, comme c'est le cas pour \texttt{init\_good/double\_condition.java}.\\
+L'analyseur détecte l'initialisation des variables lorsque les flots de contrôle sont un peu plus complexes, comme c'est le cas pour \texttt{init\_good/double\_condition.java}.\\
 
 Une vérification statique des types a également été implémentée. Sur le programme mal typé présenté plus haut, l'analyseur détecte l'erreur de typage :
 
@@ -234,7 +234,7 @@ Class body:
 ------------
 \end{verbatim}
 
-L'analyseur comprend que les deux variables entières ne font que croître dans le corps de la boucle : il donne donc une surapproximation qui conserve toutefois une bonne inférieure assez précise sur les variables. Il peut donc évaluer à \texttt{false} la condition en fin de programme, et stocke dans une table de hachage dédiée aux simplifications que la branche \texttt{true} de la structure conditionnelle est inutile ; une deuxième passe sur l'arbre syntaxique se sert des informations contenues dans cette table de hachage pour renvoyer un arbre syntaxique simplifié.\\
+L'analyseur comprend que les deux variables entières ne font que croître dans le corps de la boucle : il donne donc une surapproximation qui conserve toutefois une borne inférieure assez précise sur les variables. Il peut donc évaluer à \texttt{false} la condition en fin de programme, et stocke dans une table de hachage dédiée aux simplifications que la branche \texttt{true} de la structure conditionnelle est inutile ; une deuxième passe sur l'arbre syntaxique se sert des informations contenues dans cette table de hachage pour renvoyer un arbre syntaxique simplifié.\\
 
 Ces premières analyses statiques de variables ont donné lieu à une première passe de refactorisation du code :
 
@@ -311,7 +311,7 @@ Class body:
 
 \subsection{Analyse de congruences}
 
-Une analyse simple des congruences a été développée. Sur le fichier d'exemple \texttt{examples/analysis/loop\_congruence.java}, l'analyse détecte que la variable \texttt{x} reste paire tout au long de l'exécution, et peut donc se débarrasser d'une partie du programme :
+Une analyse simple des congruences a été développée. Sur le fichier d'exemple\newline \texttt{examples/analysis/loop\_congruence.java}, l'analyse détecte que la variable \texttt{x} reste paire tout au long de l'exécution, et peut donc se débarrasser d'une partie du programme :
 
 \begin{verbatim}
 $ ./analyzer --domain 2 examples/analysis/loop_congruence.java
