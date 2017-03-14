@@ -311,7 +311,7 @@ Class body:
 
 \subsection{Analyse de congruences}
 
-Une analyse simple des congruences a été développée. Sur le fichier d'exemple\newline \texttt{examples/analysis/loop\_congruence.java}, l'analyse détecte que la variable \texttt{x} reste paire tout au long de l'exécution, et peut donc se débarrasser d'une partie du programme :
+Une analyse simple des congruences a été développée. L'analyse détecte par exemple, sur le fichier \texttt{examples/analysis/loop\_congruence.java}, que la variable \texttt{x} reste paire tout au long de l'exécution, et peut donc se débarrasser d'une partie du programme :
 
 \begin{verbatim}
 $ ./analyzer --domain 2 examples/analysis/loop_congruence.java
